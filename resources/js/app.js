@@ -1,4 +1,4 @@
-﻿import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView } from 'vue-router'
 import './bootstrap'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'

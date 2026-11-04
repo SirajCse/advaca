@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="page-header mb-6">
     <h1 class="text-2xl font-semibold text-foreground">{{ title }}</h1>
     <nav v-if="navs && navs.length" class="mt-2 flex items-center space-x-2 text-sm text-muted-foreground">
