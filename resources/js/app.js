@@ -1,4 +1,5 @@
-﻿import './bootstrap'
+﻿import { RouterLink, RouterView } from 'vue-router'
+import './bootstrap'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
@@ -41,4 +42,8 @@ app.component('DataTable', DataTable)
 app.component('FormAction', FormAction)
 app.component('ParentTransition', ParentTransition)
 
+app.component('Link', RouterLink)
+app.component('Head', { inheritAttrs: false, template: '<slot />' })
+app.component('RouterView', RouterView)
 app.mount('#app')
+
