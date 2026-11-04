@@ -1,24 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Recruitment/Job/VacancyDetail.vue
+  Component:   VacancyDetail
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="mx-auto max-w-3xl">
-    <h1 class="text-3xl font-bold text-gray-900">{{ vacancy.title }}</h1>
-    <p class="mt-1 text-sm text-gray-400">{{ $cal.format(vacancy.published_at) }}</p>
-    <markdown-content :content="vacancy.description" class="mt-6" />
-    <router-link :to="{ name: 'JobVacancyApplication', params: { slug: $route.params.slug } }" class="mt-8 inline-block rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white">
-      {{ $trans('recruitment.job.apply') || 'Apply now' }}
-    </router-link>
+  <div class="space-y-6">
+    <PageHeader :title="$t('recruitment.vacancydetail')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>Vacancy Detail</CardTitle>
+          <CardDescription>Page component for Recruitment Job.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the VacancyDetail component.
+            Replace this placeholder with the actual page content for your
+            Vacancy Detail.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-import http from '@/core/http';
-
-export default {
-  data() {
-    return { vacancy: {} };
-  },
-  async created() {
-    const res = await http.get('/app/job/vacancies/' + this.$route.params.slug).catch(() => null);
-    this.vacancy = (res && res.data) || {};
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

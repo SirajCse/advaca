@@ -1,34 +1,59 @@
+<!--
+  Source path: resources/js/views/Pages/Dashboard/Index.vue
+  Component:   Index
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div>
-    <page-header :title="$trans('home.home') || 'Dashboard'" />
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <base-card v-for="stat in stats" :key="stat.label">
-        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ stat.label }}</p>
-        <p class="mt-2 text-3xl font-bold text-gray-800">{{ stat.value }}</p>
-      </base-card>
-    </div>
-    <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <base-card title="Recent activity">
-        <p class="py-6 text-center text-sm text-gray-400">Activity summary will appear here.</p>
-      </base-card>
-      <base-card title="Todo">
-        <p class="py-6 text-center text-sm text-gray-400">Your todo list will appear here.</p>
-      </base-card>
-    </div>
+  <div class="space-y-6">
+    <PageHeader :title="$t('dashboard.index.vue.index.vue')" :navs="navs">
+      <PageHeaderAction :name="'Index'" :title="$t('dashboard.index.vue.index.vue')" :actions="['list']" />
+    </PageHeader>
+    <ParentTransition appear :visibility="true">
+      <DataTable :title="$t('dashboard.index.vue.index.vue')" :headers="headers" :meta="meta" module="dashboard.index.vue">
+        <TableRow v-for="item in items" :key="item.id || item.uuid">
+          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
+          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
+          <TableCell class="text-right">
+            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
+            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
+          </TableCell>
+        </TableRow>
+        <TableRow v-if="!items.length">
+          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
+            No records found.
+          </TableCell>
+        </TableRow>
+      </DataTable>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      stats: [
-        { label: 'Students', value: '—' },
-        { label: 'Employees', value: '—' },
-        { label: 'Courses', value: '—' },
-        { label: 'Fee collected', value: '—' },
-      ],
-    };
-  },
-};
+<script setup>
+import { ref } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
+import { Button } from '@/components/ui/button'
+import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
+import DataTable from '@/views/Components/DataTable.vue'
+
+const props = defineProps({
+  items: { type: Array, default: () => [] },
+  meta: { type: Object, default: () => ({}) },
+})
+
+const headers = [
+  { name: 'name', label: 'Name' },
+  { name: 'createdAt', label: 'Created' },
+  { name: 'action', label: 'Actions' },
+]
+
+const navs = [
+  { label: 'Dashboard', path: 'Dashboard' },
+  { label: 'Index.vue', path: 'Index' },
+]
+
+const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
+const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
 </script>

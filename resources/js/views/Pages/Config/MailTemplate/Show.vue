@@ -1,42 +1,61 @@
+<!--
+  Source path: resources/js/views/Pages/Config/MailTemplate/Show.vue
+  Component:   Show
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div>
-    <page-header :title="$trans('global.detail')" />
-    <base-loader v-if="loading" />
-    <base-card v-else>
-      <show-item :items="items" />
-      <div class="mt-4 flex justify-end">
-        <base-button variant="secondary" @click="back">{{ $trans('global.back') || 'Back' }}</base-button>
-      </div>
-    </base-card>
+  <div class="space-y-6">
+    <PageHeader :title="$t('config.mailtemplate')" :navs="navs" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>{{ item.name || item.title || $t('config.mailtemplate') }}</CardTitle>
+          <CardDescription>UUID: {{ item.uuid || '-' }}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm font-medium text-muted-foreground">Name</p>
+              <p>{{ item.name || '-' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-muted-foreground">Code</p>
+              <p>{{ item.code || '-' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-muted-foreground">Created</p>
+              <p>{{ item.createdAt || item.created_at || '-' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-muted-foreground">Status</p>
+              <Badge :variant="item.status ? 'default' : 'secondary'">{{ item.status ? 'Active' : 'Inactive' }}</Badge>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button variant="outline" @click="back">Back</Button>
+        </CardFooter>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-/**
- * Reconstructed page — original path: resources/js/views/Pages/Config/MailTemplate/Show.vue
- * Route: /config/mail-template/:uuid
- * Vuex module: config
- */
-export default {
-  computed: {
-    form: (vm) => (vm.$store.state.config && vm.$store.state.config.form) || {},
-    loading: (vm) => (vm.$store.state.config && vm.$store.state.config.loading) || false,
-    items() {
-      return [
-        { label: 'Name', value: this.form.name },
-        { label: 'Description', value: this.form.description },
-        { label: 'Created at', value: this.$cal.format(this.form.created_at) },
-      ];
-    },
-  },
-  async created() {
-    if (!"config" || !this.$route.params.uuid) return;
-    this.$store.dispatch('config/show', this.$route.params.uuid).catch(() => {});
-  },
-  methods: {
-    back() {
-      this.$router.back();
-    },
-  },
-};
+<script setup>
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
+import { router } from '@inertiajs/vue3'
+
+const props = defineProps({
+  item: { type: Object, default: () => ({}) },
+})
+
+const navs = [
+  { label: 'Config', path: 'Config' },
+  { label: 'Mail Template', path: 'Show' },
+]
+
+const back = () => router.back()
 </script>

@@ -1,30 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Student/GuestPayment/Anonymous.vue
+  Component:   Anonymous
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="mx-auto max-w-2xl">
-    <div class="rounded-xl bg-white p-8 shadow">
-      <h1 class="mb-6 text-2xl font-bold">{{ $trans('student.guest_payment.anonymous') || 'Anonymous payment' }}</h1>
-      <p class="mb-4 text-sm text-gray-500">Payment reference: {{ $route.params.uuid }}</p>
-      <base-button :loading="loading" class="w-full" @click="pay">{{ $trans('finance.payment.pay_now') || 'Pay now' }}</base-button>
-    </div>
+  <div class="space-y-6">
+    <PageHeader :title="$t('student.anonymous')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>Anonymous</CardTitle>
+          <CardDescription>Page component for Student Guest Payment.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the Anonymous component.
+            Replace this placeholder with the actual page content for your
+            Anonymous.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-import http from '@/core/http';
-
-export default {
-  data() {
-    return { loading: false };
-  },
-  methods: {
-    async pay() {
-      this.loading = true;
-      try {
-        const res = await http.post('/app/anonymous-payments/' + this.$route.params.uuid + '/pay');
-        if (res.data && res.data.redirect_url) window.location.href = res.data.redirect_url;
-      } finally {
-        this.loading = false;
-      }
-    },
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

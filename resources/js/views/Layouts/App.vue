@@ -1,59 +1,53 @@
+﻿<script setup>
+import { RouterView, RouterLink, useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+
+const router = useRouter()
+const isDark = ref(false)
+
+function applyTheme() {
+  const stored = localStorage.getItem('advaca-theme')
+  const dark = stored === 'dark' ||
+    (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  isDark.value = dark
+  document.documentElement.classList.toggle('dark', dark)
+}
+onMounted(applyTheme)
+
+function toggleTheme() {
+  const next = !isDark.value
+  isDark.value = next
+  localStorage.setItem('advaca-theme', next ? 'dark' : 'light')
+  document.documentElement.classList.toggle('dark', next)
+}
+
+const currentPath = computed(() => router.currentRoute.value.path)
+</script>
+
 <template>
-  <div class="min-h-screen bg-gray-100" :class="'theme-' + colorScheme">
-    <div class="flex min-h-screen">
-      <aside
-        class="fixed inset-y-0 left-0 z-30 w-64 transform overflow-y-auto bg-white shadow transition-transform lg:static lg:translate-x-0"
-        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-      >
-        <div class="flex h-16 items-center border-b border-gray-100 px-4">
-          <router-link to="/" class="text-lg font-bold text-primary">{{ siteName }}</router-link>
+  <div class="min-h-screen bg-background text-foreground">
+    <header class="border-b bg-card">
+      <div class="flex h-14 items-center px-4 gap-4">
+        <RouterLink to="/" class="font-semibold text-lg">Advaca</RouterLink>
+        <nav class="ml-4 hidden md:flex gap-4 text-sm">
+          <RouterLink to="/dashboard" class="hover:text-primary">Dashboard</RouterLink>
+          <RouterLink to="/employee" class="hover:text-primary">Employees</RouterLink>
+          <RouterLink to="/student" class="hover:text-primary">Students</RouterLink>
+          <RouterLink to="/academic" class="hover:text-primary">Academic</RouterLink>
+          <RouterLink to="/finance" class="hover:text-primary">Finance</RouterLink>
+        </nav>
+        <div class="ml-auto flex items-center gap-2">
+          <button type="button"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-md border text-sm"
+            @click="toggleTheme">
+            {{ isDark ? 'sun' : 'moon' }}
+          </button>
         </div>
-        <app-navigation />
-      </aside>
-
-      <div class="flex min-w-0 flex-1 flex-col">
-        <header class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4">
-          <div class="flex items-center gap-3">
-            <button type="button" class="rounded p-1 text-gray-500 hover:bg-gray-100" @click="$store.dispatch('layout/toggleSidebar')">
-              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
-            </button>
-            <slot name="topbar-left" />
-          </div>
-          <div class="flex items-center gap-3">
-            <slot name="topbar-right" />
-            <profile-dropdown />
-          </div>
-        </header>
-
-        <main class="flex-1 p-4 lg:p-6">
-          <router-view v-slot="{ Component }">
-            <parent-transition appear>
-              <component :is="Component" />
-            </parent-transition>
-          </router-view>
-        </main>
-
-        <footer-credit />
       </div>
-    </div>
+    </header>
+
+    <main class="flex-1 p-6">
+      <RouterView />
+    </main>
   </div>
 </template>
-
-<script>
-export default {
-  name: 'AppLayout',
-  computed: {
-    sidebarOpen() {
-      return this.$store.state.layout.sidebarOpen;
-    },
-    colorScheme() {
-      const system = this.$store.state.config.system || {};
-      return system.color_scheme || 'default';
-    },
-    siteName() {
-      const system = this.$store.state.config.system || {};
-      return system.name || 'Advaca';
-    },
-  },
-};
-</script>

@@ -1,28 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/User/Profile/Preference.vue
+  Component:   Preference
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div>
-    <page-header v-if="standalone" :title="$trans('user.preference.preference')" />
-    <base-card>
-      <slot />
-      <p class="py-6 text-center text-sm text-gray-400">
-        {{ $trans('global.content_placeholder') || 'Content area' }}
-      </p>
-    </base-card>
+  <div class="space-y-6">
+    <PageHeader :title="$t('user.preference')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>Preference</CardTitle>
+          <CardDescription>Page component for User Profile.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the Preference component.
+            Replace this placeholder with the actual page content for your
+            Preference.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-/**
- * Reconstructed page — original path: resources/js/views/Pages/User/Profile/Preference.vue
- * Route: /user/preference
- * Vuex module: (general)
- *
- * This component was rendered inside its parent route in the original app;
- * extend the template with the feature-specific UI.
- */
-export default {
-  name: "Preference",
-  props: {
-    standalone: { type: Boolean, default: false },
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

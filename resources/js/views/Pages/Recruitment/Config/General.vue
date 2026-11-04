@@ -1,28 +1,58 @@
+<!--
+  Source path: resources/js/views/Pages/Recruitment/Config/General.vue
+  Component:   General
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div>
-    <page-header v-if="standalone" :title="$trans('recruitment.config.config')" />
-    <base-card>
-      <slot />
-      <p class="py-6 text-center text-sm text-gray-400">
-        {{ $trans('global.content_placeholder') || 'Content area' }}
-      </p>
-    </base-card>
+  <div class="space-y-6">
+    <PageHeader :title="$t('recruitment.config')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>{{ $t('recruitment.config') }}</CardTitle>
+          <CardDescription>Configure Recruitment settings.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <Label>Enable feature</Label>
+                <p class="text-sm text-muted-foreground">Toggle the Config feature on or off.</p>
+              </div>
+              <Switch v-model:checked="form.enabled" />
+            </div>
+            <Separator />
+            <div>
+              <Label for="default-value">Default value</Label>
+              <Input id="default-value" v-model="form.defaultValue" class="mt-1" />
+            </div>
+          </form>
+        </CardContent>
+        <CardFooter class="justify-end">
+          <Button @click="save">Save changes</Button>
+        </CardFooter>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-/**
- * Reconstructed page — original path: resources/js/views/Pages/Recruitment/Config/General.vue
- * Route: /recruitment/config/general
- * Vuex module: (general)
- *
- * This component was rendered inside its parent route in the original app;
- * extend the template with the feature-specific UI.
- */
-export default {
-  name: "General",
-  props: {
-    standalone: { type: Boolean, default: false },
-  },
-};
+<script setup>
+import { reactive } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Separator } from '@/components/ui/separator'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
+
+const form = reactive({
+  enabled: true,
+  defaultValue: '',
+})
+
+const save = () => {
+  // Submit settings to backend
+}
 </script>

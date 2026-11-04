@@ -1,35 +1,59 @@
+<!--
+  Source path: resources/js/views/Pages/Reception/OnlineEnquiry/Index.vue
+  Component:   Index
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="mx-auto max-w-2xl">
-    <div class="rounded-xl bg-white p-8 shadow">
-      <h1 class="mb-2 text-2xl font-bold">{{ $trans('reception.enquiry.enquiry') || 'Online enquiry' }}</h1>
-      <p class="mb-6 text-sm text-gray-500">{{ $trans('reception.enquiry.description') || 'Submit your enquiry and we will get back to you.' }}</p>
-      <form @submit.prevent="submit">
-        <base-input v-model="form.name" :label="$trans('global.name') || 'Name'" class="mb-4" required />
-        <base-input v-model="form.email" type="email" :label="$trans('auth.email') || 'Email'" class="mb-4" />
-        <base-input v-model="form.contact_number" :label="$trans('global.phone') || 'Phone'" class="mb-4" />
-        <base-textarea v-model="form.message" :label="$trans('global.message') || 'Message'" class="mb-4" required />
-        <base-button type="submit" :loading="loading" class="w-full">{{ $trans('global.submit') || 'Submit' }}</base-button>
-      </form>
-    </div>
+  <div class="space-y-6">
+    <PageHeader :title="$t('reception.onlineenquiry.onlineenquiry')" :navs="navs">
+      <PageHeaderAction :name="'Index'" :title="$t('reception.onlineenquiry.onlineenquiry')" :actions="['list']" />
+    </PageHeader>
+    <ParentTransition appear :visibility="true">
+      <DataTable :title="$t('reception.onlineenquiry.onlineenquiry')" :headers="headers" :meta="meta" module="reception.onlineenquiry">
+        <TableRow v-for="item in items" :key="item.id || item.uuid">
+          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
+          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
+          <TableCell class="text-right">
+            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
+            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
+          </TableCell>
+        </TableRow>
+        <TableRow v-if="!items.length">
+          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
+            No records found.
+          </TableCell>
+        </TableRow>
+      </DataTable>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-import http from '@/core/http';
+<script setup>
+import { ref } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
+import { Button } from '@/components/ui/button'
+import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
+import DataTable from '@/views/Components/DataTable.vue'
 
-export default {
-  data() {
-    return { form: { name: '', email: '', contact_number: '', message: '' }, loading: false };
-  },
-  methods: {
-    async submit() {
-      this.loading = true;
-      try {
-        await http.post('/app/online-enquiries', this.form);
-      } finally {
-        this.loading = false;
-      }
-    },
-  },
-};
+const props = defineProps({
+  items: { type: Array, default: () => [] },
+  meta: { type: Object, default: () => ({}) },
+})
+
+const headers = [
+  { name: 'name', label: 'Name' },
+  { name: 'createdAt', label: 'Created' },
+  { name: 'action', label: 'Actions' },
+]
+
+const navs = [
+  { label: 'Reception', path: 'Reception' },
+  { label: 'Online Enquiry', path: 'Index' },
+]
+
+const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
+const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
 </script>

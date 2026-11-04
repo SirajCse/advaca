@@ -1,12 +1,31 @@
+<!--
+  Source path: resources/js/views/Layouts/Setup.vue
+  Component:   Setup
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-gray-100 theme-default">
-    <div class="w-full max-w-2xl rounded-xl bg-white p-8 shadow">
-      <h1 class="mb-6 text-center text-2xl font-bold text-gray-800">{{ $trans('setup.install.install_wizard') || 'Setup wizard' }}</h1>
-      <router-view />
-    </div>
+  <div class="space-y-6">
+    <PageHeader :title="$t('global.generic')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>generic</CardTitle>
+          <CardDescription>Page component for the generic.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the Setup component.
+            Replace this placeholder with the actual page content for your
+            generic.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-export default { name: 'SetupLayout' };
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

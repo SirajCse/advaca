@@ -1,38 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Auth/Register.vue
+  Component:   Register
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="flex min-h-full items-center justify-center bg-gray-50 px-4 py-12">
-    <div class="w-full max-w-md rounded-xl bg-white p-8 shadow">
-      <h1 class="mb-6 text-center text-2xl font-bold">{{ $trans('auth.register.page_title') || 'Register' }}</h1>
-      <form @submit.prevent="submit">
-        <base-input v-model="form.name" :label="$trans('global.name') || 'Name'" class="mb-4" required />
-        <base-input v-model="form.email" type="email" :label="$trans('auth.email') || 'Email'" class="mb-4" required />
-        <base-input v-model="form.password" type="password" :label="$trans('auth.password') || 'Password'" class="mb-4" required />
-        <base-input v-model="form.password_confirmation" type="password" :label="$trans('auth.confirm_password') || 'Confirm password'" class="mb-4" required />
-        <base-button type="submit" :loading="loading" class="w-full">{{ $trans('auth.register') || 'Register' }}</base-button>
-      </form>
-      <router-link to="/login" class="mt-4 block text-center text-sm text-primary hover:underline">
-        {{ $trans('auth.back_to_login') || 'Back to sign in' }}
-      </router-link>
-    </div>
+  <div class="space-y-6">
+    <PageHeader :title="$t('auth.register')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>Register</CardTitle>
+          <CardDescription>Page component for Auth Register.vue.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the Register component.
+            Replace this placeholder with the actual page content for your
+            Register.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-import http from '@/core/http';
-
-export default {
-  data() {
-    return { form: { name: '', email: '', password: '', password_confirmation: '' }, loading: false };
-  },
-  methods: {
-    async submit() {
-      this.loading = true;
-      try {
-        await http.post('/auth/register', this.form);
-        this.$router.push('/login');
-      } finally {
-        this.loading = false;
-      }
-    },
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

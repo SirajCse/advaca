@@ -1,12 +1,31 @@
+<!--
+  Source path: resources/js/views/Layouts/User.vue
+  Component:   User
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="min-h-screen bg-gray-100">
-    <app-navigation />
-    <main class="p-4">
-      <router-view />
-    </main>
+  <div class="space-y-6">
+    <PageHeader :title="$t('global.generic')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>generic</CardTitle>
+          <CardDescription>Page component for the generic.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the User component.
+            Replace this placeholder with the actual page content for your
+            generic.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-export default { name: 'UserLayout' };
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

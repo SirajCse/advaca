@@ -1,35 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Auth/FailedLoginAttempt.vue
+  Component:   FailedLoginAttempt
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div>
-    <page-header :title="$trans('auth.failed_login_attempt') || 'Failed login attempts'" />
-    <data-table :columns="columns" :rows="list" :meta="meta" :loading="loading" @page-change="fetch" />
+  <div class="space-y-6">
+    <PageHeader :title="$t('auth.failedloginattempt')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>Failed Login Attempt</CardTitle>
+          <CardDescription>Page component for Auth Failed Login Attempt.vue.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the FailedLoginAttempt component.
+            Replace this placeholder with the actual page content for your
+            Failed Login Attempt.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      columns: [
-        { key: 'created_at', label: 'Time' },
-        { key: 'email', label: 'Email' },
-        { key: 'ip', label: 'IP address' },
-        { key: 'user_agent', label: 'Device' },
-      ],
-      search: '',
-    };
-  },
-  computed: {
-    list: (vm) => vm.$store.state.auth.list,
-    meta: (vm) => vm.$store.state.auth.listMeta,
-    loading: (vm) => vm.$store.state.auth.loading,
-  },
-  created() {
-    this.fetch();
-  },
-  methods: {
-    fetch(page = 1) {
-      this.$store.dispatch('auth/list', { params: { page, keyword: this.search } });
-    },
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

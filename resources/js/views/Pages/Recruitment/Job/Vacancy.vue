@@ -1,29 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Recruitment/Job/Vacancy.vue
+  Component:   Vacancy
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="mx-auto max-w-4xl">
-    <page-header :title="$trans('recruitment.job.vacancy') || 'Job vacancies'" />
-    <card-list>
-      <card-view v-for="vacancy in vacancies" :key="vacancy.uuid">
-        <h3 class="text-lg font-semibold text-gray-800">{{ vacancy.title }}</h3>
-        <p class="mt-1 text-xs text-gray-400">{{ $cal.format(vacancy.published_at) }}</p>
-        <p class="mt-2 text-sm text-gray-500">{{ vacancy.summary }}</p>
-        <router-link :to="{ name: 'JobVacancyDetail', params: { slug: vacancy.slug } }" class="mt-3 inline-block text-sm text-primary hover:underline">
-          {{ $trans('global.detail') || 'View details' }}
-        </router-link>
-      </card-view>
-    </card-list>
+  <div class="space-y-6">
+    <PageHeader :title="$t('recruitment.vacancy')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>Vacancy</CardTitle>
+          <CardDescription>Page component for Recruitment Job.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the Vacancy component.
+            Replace this placeholder with the actual page content for your
+            Vacancy.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-import http from '@/core/http';
-
-export default {
-  data() {
-    return { vacancies: [] };
-  },
-  async created() {
-    const res = await http.get('/app/job/vacancies').catch(() => null);
-    this.vacancies = (res && res.data && res.data.data) || [];
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

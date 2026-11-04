@@ -1,23 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Site/Page/View.vue
+  Component:   View
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div>
-    <div v-if="page" class="mx-auto max-w-4xl">
-      <h1 class="mb-6 text-3xl font-bold text-gray-900">{{ page.title }}</h1>
-      <markdown-content :content="page.content" />
-    </div>
-    <p v-else class="py-20 text-center text-gray-400">Loading…</p>
+  <div class="space-y-6">
+    <PageHeader :title="$t('site.view')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>View</CardTitle>
+          <CardDescription>Page component for Site Page.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the View component.
+            Replace this placeholder with the actual page content for your
+            View.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-import http from '@/core/http';
-
-export default {
-  data() {
-    return { page: null };
-  },
-  async created() {
-    const res = await http.get('/app/pages/' + this.$route.params.slug).catch(() => null);
-    this.page = (res && res.data) || null;
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

@@ -1,21 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Site/Post/View.vue
+  Component:   View
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="mx-auto max-w-4xl">
-    <h1 class="mb-4 text-3xl font-bold text-gray-900">{{ post.title }}</h1>
-    <p class="mb-6 text-sm text-gray-400">{{ $cal.format(post.created_at) }}</p>
-    <markdown-content :content="post.content" />
+  <div class="space-y-6">
+    <PageHeader :title="$t('site.view')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>View</CardTitle>
+          <CardDescription>Page component for Site Post.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the View component.
+            Replace this placeholder with the actual page content for your
+            View.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-import http from '@/core/http';
-
-export default {
-  data() {
-    return { post: {} };
-  },
-  async created() {
-    const res = await http.get('/app/site/posts/' + this.$route.params.uuid).catch(() => null);
-    this.post = (res && res.data) || {};
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

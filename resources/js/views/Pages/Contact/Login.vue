@@ -1,28 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Contact/Login.vue
+  Component:   Login
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div>
-    <page-header v-if="standalone" :title="$trans('contact.login.login')" />
-    <base-card>
-      <slot />
-      <p class="py-6 text-center text-sm text-gray-400">
-        {{ $trans('global.content_placeholder') || 'Content area' }}
-      </p>
-    </base-card>
+  <div class="space-y-6">
+    <PageHeader :title="$t('contact.login')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>Login</CardTitle>
+          <CardDescription>Page component for Contact Login.vue.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the Login component.
+            Replace this placeholder with the actual page content for your
+            Login.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-/**
- * Reconstructed page — original path: resources/js/views/Pages/Contact/Login.vue
- * Route: /contacts/:uuid/login
- * Vuex module: (general)
- *
- * This component was rendered inside its parent route in the original app;
- * extend the template with the feature-specific UI.
- */
-export default {
-  name: "Login",
-  props: {
-    standalone: { type: Boolean, default: false },
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

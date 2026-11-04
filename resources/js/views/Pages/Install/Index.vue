@@ -1,64 +1,59 @@
+<!--
+  Source path: resources/js/views/Pages/Install/Index.vue
+  Component:   Index
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div>
-    <ol class="mb-8 flex items-center justify-center gap-2 text-sm">
-      <li v-for="(step, index) in steps" :key="step.name" class="flex items-center gap-2">
-        <span class="flex h-8 w-8 items-center justify-center rounded-full font-semibold" :class="stepIndex >= index ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'">{{ index + 1 }}</span>
-        <span :class="stepIndex >= index ? 'text-gray-800' : 'text-gray-400'">{{ step.label }}</span>
-        <span v-if="index < steps.length - 1" class="mx-1 h-px w-8 bg-gray-300" />
-      </li>
-    </ol>
-    <base-card>
-      <component :is="current.component" v-model:form="form" :errors="formErrors" />
-      <div class="mt-6 flex justify-between">
-        <base-button v-if="stepIndex > 0" variant="secondary" @click="stepIndex--">Back</base-button>
-        <span v-else />
-        <base-button :loading="loading" @click="next">{{ stepIndex === steps.length - 1 ? 'Install' : 'Next' }}</base-button>
-      </div>
-    </base-card>
+  <div class="space-y-6">
+    <PageHeader :title="$t('install.index.vue.index.vue')" :navs="navs">
+      <PageHeaderAction :name="'Index'" :title="$t('install.index.vue.index.vue')" :actions="['list']" />
+    </PageHeader>
+    <ParentTransition appear :visibility="true">
+      <DataTable :title="$t('install.index.vue.index.vue')" :headers="headers" :meta="meta" module="install.index.vue">
+        <TableRow v-for="item in items" :key="item.id || item.uuid">
+          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
+          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
+          <TableCell class="text-right">
+            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
+            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
+          </TableCell>
+        </TableRow>
+        <TableRow v-if="!items.length">
+          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
+            No records found.
+          </TableCell>
+        </TableRow>
+      </DataTable>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-const env = { name: 'environment', label: 'Environment' };
-const db = { name: 'database', label: 'Database' };
-const admin = { name: 'admin', label: 'Admin account' };
-const org = { name: 'organization', label: 'Organization' };
+<script setup>
+import { ref } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
+import { Button } from '@/components/ui/button'
+import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
+import DataTable from '@/views/Components/DataTable.vue'
 
-export default {
-  data() {
-    return {
-      stepIndex: 0,
-      loading: false,
-      form: {},
-      steps: [
-        { ...env, component: 'InstallEnvironment' },
-        { ...db, component: 'InstallDatabase' },
-        { ...org, component: 'InstallOrganization' },
-        { ...admin, component: 'InstallAdmin' },
-      ].map((step) => ({ ...step })),
-    };
-  },
-  computed: {
-    current() {
-      return this.steps[this.stepIndex];
-    },
-    formErrors() {
-      return this.$store.state.setup.formErrors || {};
-    },
-  },
-  methods: {
-    async next() {
-      if (this.stepIndex < this.steps.length - 1) {
-        this.stepIndex++;
-        return;
-      }
-      this.loading = true;
-      try {
-        await this.$store.dispatch('setup/install');
-      } finally {
-        this.loading = false;
-      }
-    },
-  },
-};
+const props = defineProps({
+  items: { type: Array, default: () => [] },
+  meta: { type: Object, default: () => ({}) },
+})
+
+const headers = [
+  { name: 'name', label: 'Name' },
+  { name: 'createdAt', label: 'Created' },
+  { name: 'action', label: 'Actions' },
+]
+
+const navs = [
+  { label: 'Install', path: 'Install' },
+  { label: 'Index.vue', path: 'Index' },
+]
+
+const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
+const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
 </script>

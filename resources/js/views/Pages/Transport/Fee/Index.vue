@@ -1,70 +1,59 @@
+<!--
+  Source path: resources/js/views/Pages/Transport/Fee/Index.vue
+  Component:   Index
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div>
-    <page-header :title="$trans('global.list')" />
-    <key-search v-if="false" v-model="search" class="mb-4" />
-    <data-table
-      :columns="columns"
-      :rows="list"
-      :meta="listMeta"
-      :loading="loading"
-      @page-change="fetch"
-    >
-      <template #actions="{ row }">
-        <row-action>
-          <dropdown-item @click="edit(row)">{{ $trans('global.edit') || 'Edit' }}</dropdown-item>
-          <dropdown-item variant="danger" @click="remove(row)">{{ $trans('global.delete') || 'Delete' }}</dropdown-item>
-        </row-action>
-      </template>
-    </data-table>
-    <base-button class="mt-4" :to="{ name: createActionName }">{{ $trans('global.add') || 'Add' }}</base-button>
+  <div class="space-y-6">
+    <PageHeader :title="$t('transport.fee.fee')" :navs="navs">
+      <PageHeaderAction :name="'Index'" :title="$t('transport.fee.fee')" :actions="['list']" />
+    </PageHeader>
+    <ParentTransition appear :visibility="true">
+      <DataTable :title="$t('transport.fee.fee')" :headers="headers" :meta="meta" module="transport.fee">
+        <TableRow v-for="item in items" :key="item.id || item.uuid">
+          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
+          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
+          <TableCell class="text-right">
+            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
+            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
+          </TableCell>
+        </TableRow>
+        <TableRow v-if="!items.length">
+          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
+            No records found.
+          </TableCell>
+        </TableRow>
+      </DataTable>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-/**
- * Reconstructed page — original path: resources/js/views/Pages/Transport/Fee/Index.vue
- * Route: /transport/fees/
- * Vuex module: (general)
- */
-export default {
-  data() {
-    return {
-      columns: [
-        { key: 'index', label: '#' },
-        { key: 'name', label: 'Name' },
-        { key: 'created_at', label: 'Created at' },
-      ],
-      search: '',
-    };
-  },
-  computed: {
-    list: (vm) => vm.$store.state.null ? vm.$store.state.null.list : [],
-    listMeta: (vm) => vm.$store.state.null ? vm.$store.state.null.listMeta : {},
-    loading: (vm) => vm.$store.state.null ? vm.$store.state.null.loading : false,
-    createActionName() {
-      const base = this.$route.name || '';
-      return base.endsWith('List') ? base.slice(0, -4) + 'Create' : base + 'Create';
-    },
-  },
-  created() {
-    this.fetch();
-  },
-  methods: {
-    fetch(page = 1) {
-      if (!null) return;
-      this.$store.dispatch('None/list', { params: { page, keyword: this.search } });
-    },
-    edit(row) {
-      const base = this.$route.name || '';
-      const editName = base.endsWith('List') ? base.slice(0, -4) + 'Edit' : base + 'Edit';
-      this.$router.push({ name: editName, params: { uuid: row.uuid } });
-    },
-    async remove(row) {
-      const confirmed = await this.$swal('Delete this record?');
-      if (!confirmed.isConfirmed) return;
-      if (!null) return;
-      this.$store.dispatch('None/destroy', row.uuid).then(() => this.fetch());
-    },
-  },
-};
+<script setup>
+import { ref } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
+import { Button } from '@/components/ui/button'
+import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
+import DataTable from '@/views/Components/DataTable.vue'
+
+const props = defineProps({
+  items: { type: Array, default: () => [] },
+  meta: { type: Object, default: () => ({}) },
+})
+
+const headers = [
+  { name: 'name', label: 'Name' },
+  { name: 'createdAt', label: 'Created' },
+  { name: 'action', label: 'Actions' },
+]
+
+const navs = [
+  { label: 'Transport', path: 'Transport' },
+  { label: 'Fee', path: 'Index' },
+]
+
+const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
+const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
 </script>

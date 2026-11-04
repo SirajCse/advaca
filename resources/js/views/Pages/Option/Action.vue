@@ -1,77 +1,78 @@
+<!--
+  Source path: resources/js/views/Pages/Option/Action.vue
+  Component:   Action
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div>
-    <page-header :title="title" />
-    <base-card>
-      <form @submit.prevent="submit">
-        <base-input v-model="form.name" :label="$trans('global.name') || 'Name'" class="mb-4" :error="formErrors.name" required />
-        <base-textarea v-model="form.description" :label="$trans('global.description') || 'Description'" class="mb-4" :error="formErrors.description" />
-        <form-action :loading="loading" @cancel="back" />
-      </form>
-    </base-card>
+  <div class="space-y-6">
+    <PageHeader :title="$t('option.action.vue')" :navs="navs" />
+    <ParentTransition appear :visibility="true">
+      <FormAction :title="$t('option.action.vue')" @submit="submit">
+        <template #default>
+          <div class="grid grid-cols-3 gap-6">
+            <div class="col-span-3 sm:col-span-2">
+              <Label for="name">{{ $t('option.action.vue') }}</Label>
+              <Input id="name" v-model="form.name" class="mt-1" />
+            </div>
+            <div class="col-span-3 sm:col-span-1">
+              <Label for="code">Code</Label>
+              <Input id="code" v-model="form.code" class="mt-1" />
+            </div>
+            <div class="col-span-3">
+              <Label for="description">Description</Label>
+              <Textarea id="description" v-model="form.description" rows="3" class="mt-1" />
+            </div>
+            <div class="col-span-3 sm:col-span-1">
+              <Label for="status">Status</Label>
+              <Switch id="status" v-model:checked="form.status" class="mt-2" />
+            </div>
+          </div>
+        </template>
+        <template #actions>
+          <Button type="submit" :disabled="processing">{ $t('global.save') }</Button>
+          <Button variant="outline" @click="back">Cancel</Button>
+        </template>
+      </FormAction>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return { localForm: {} };
-  },
-  computed: {
-    meta() {
-      return this.$route.meta || {};
-    },
-    namespace() {
-      return this.meta.queryType || null;
-    },
-    moduleState() {
-      return this.namespace ? this.$store.state[this.namespace] : { form: {}, formErrors: {}, loading: false };
-    },
-    form: {
-      get() {
-        return { name: '', description: '', ...this.moduleState.form, ...this.localForm };
-      },
-      set(value) {
-        this.localForm = value;
-      },
-    },
-    formErrors() {
-      return this.moduleState.formErrors || {};
-    },
-    loading() {
-      return this.moduleState.loading;
-    },
-    isEdit() {
-      return this.meta.type === 'edit';
-    },
-    title() {
-      return this.$trans(this.meta.trans || 'global.add');
-    },
-  },
-  async created() {
-    if (!this.namespace) return;
-    await this.$store.dispatch(this.namespace + '/preRequisite').catch(() => {});
-    if (this.isEdit && this.$route.params.uuid) {
-      this.$store.dispatch(this.namespace + '/show', this.$route.params.uuid).catch(() => {});
-    }
-  },
-  methods: {
-    async submit() {
-      const ns = this.namespace;
-      if (!ns) return;
-      try {
-        if (this.isEdit) {
-          await this.$store.dispatch(ns + '/update', { uuid: this.$route.params.uuid, form: this.form });
-        } else {
-          await this.$store.dispatch(ns + '/store', this.form);
-        }
-        this.$router.push({ name: (this.meta.prefix || '') + 'List' });
-      } catch (error) {
-        // validation errors are committed to the module store
-      }
-    },
-    back() {
-      this.$router.push({ name: (this.meta.prefix || '') + 'List' });
-    },
-  },
-};
+<script setup>
+import { reactive, ref } from 'vue'
+import { router } from '@inertiajs/vue3'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
+import FormAction from '@/views/Components/FormAction.vue'
+
+const props = defineProps({
+  item: { type: Object, default: () => ({}) },
+})
+
+const form = reactive({
+  name: props.item?.name || '',
+  code: props.item?.code || '',
+  description: props.item?.description || '',
+  status: props.item?.status ?? true,
+})
+
+const processing = ref(false)
+
+const navs = [
+  { label: 'Option', path: 'Option' },
+  { label: 'Action.vue', path: 'Action' },
+]
+
+const submit = () => {
+  processing.value = true
+  router.post('/option/action.vue', form, {
+    onFinish: () => { processing.value = false },
+  })
+}
+
+const back = () => router.back()
 </script>

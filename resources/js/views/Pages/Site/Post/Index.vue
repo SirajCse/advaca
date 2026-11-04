@@ -1,28 +1,59 @@
+<!--
+  Source path: resources/js/views/Pages/Site/Post/Index.vue
+  Component:   Index
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="mx-auto max-w-4xl">
-    <page-header :title="$trans('site.post.post') || 'Posts'" />
-    <card-list>
-      <card-view v-for="post in posts" :key="post.uuid">
-        <h3 class="text-lg font-semibold text-gray-800">{{ post.title }}</h3>
-        <p class="mt-2 text-sm text-gray-500">{{ post.excerpt }}</p>
-        <router-link :to="{ name: 'SitePostView', params: { uuid: post.uuid } }" class="mt-3 inline-block text-sm text-primary hover:underline">
-          {{ $trans('global.read_more') || 'Read more' }}
-        </router-link>
-      </card-view>
-    </card-list>
+  <div class="space-y-6">
+    <PageHeader :title="$t('site.post.post')" :navs="navs">
+      <PageHeaderAction :name="'Index'" :title="$t('site.post.post')" :actions="['list']" />
+    </PageHeader>
+    <ParentTransition appear :visibility="true">
+      <DataTable :title="$t('site.post.post')" :headers="headers" :meta="meta" module="site.post">
+        <TableRow v-for="item in items" :key="item.id || item.uuid">
+          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
+          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
+          <TableCell class="text-right">
+            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
+            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
+          </TableCell>
+        </TableRow>
+        <TableRow v-if="!items.length">
+          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
+            No records found.
+          </TableCell>
+        </TableRow>
+      </DataTable>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-import http from '@/core/http';
+<script setup>
+import { ref } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
+import { Button } from '@/components/ui/button'
+import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
+import DataTable from '@/views/Components/DataTable.vue'
 
-export default {
-  data() {
-    return { posts: [] };
-  },
-  async created() {
-    const res = await http.get('/app/site/posts').catch(() => null);
-    this.posts = (res && res.data && res.data.data) || [];
-  },
-};
+const props = defineProps({
+  items: { type: Array, default: () => [] },
+  meta: { type: Object, default: () => ({}) },
+})
+
+const headers = [
+  { name: 'name', label: 'Name' },
+  { name: 'createdAt', label: 'Created' },
+  { name: 'action', label: 'Actions' },
+]
+
+const navs = [
+  { label: 'Site', path: 'Site' },
+  { label: 'Post', path: 'Index' },
+]
+
+const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
+const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
 </script>

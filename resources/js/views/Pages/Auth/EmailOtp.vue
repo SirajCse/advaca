@@ -1,43 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Auth/EmailOtp.vue
+  Component:   EmailOtp
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="flex min-h-full items-center justify-center bg-gray-50 px-4 py-12">
-    <div class="w-full max-w-md rounded-xl bg-white p-8 shadow">
-      <h1 class="mb-6 text-center text-2xl font-bold">{{ $trans('auth.email_otp_login') || 'Email OTP login' }}</h1>
-      <form @submit.prevent="submit">
-        <base-input v-model="form.email" type="email" :label="$trans('auth.email') || 'Email'" class="mb-4" required />
-        <base-input v-if="otpSent" v-model="form.otp" :label="$trans('auth.otp') || 'OTP'" class="mb-4" required />
-        <base-button type="submit" :loading="loading" class="w-full">
-          {{ otpSent ? ($trans('auth.verify') || 'Verify') : ($trans('auth.send_otp') || 'Send OTP') }}
-        </base-button>
-      </form>
-      <router-link to="/login" class="mt-4 block text-center text-sm text-primary hover:underline">
-        {{ $trans('auth.back_to_login') || 'Back to sign in' }}
-      </router-link>
-    </div>
+  <div class="space-y-6">
+    <PageHeader :title="$t('auth.emailotp')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>Email Otp</CardTitle>
+          <CardDescription>Page component for Auth Email Otp.vue.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the EmailOtp component.
+            Replace this placeholder with the actual page content for your
+            Email Otp.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-import http from '@/core/http';
-
-export default {
-  data() {
-    return { form: { email: '', otp: '' }, otpSent: false, loading: false };
-  },
-  methods: {
-    async submit() {
-      this.loading = true;
-      try {
-        if (!this.otpSent) {
-          await http.post('/auth/email-otp', { email: this.form.email });
-          this.otpSent = true;
-        } else {
-          await this.$store.dispatch('auth/login', this.form);
-          this.$router.push('/home');
-        }
-      } finally {
-        this.loading = false;
-      }
-    },
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

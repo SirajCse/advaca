@@ -1,35 +1,59 @@
+<!--
+  Source path: resources/js/views/Pages/Student/OnlineRegistration/Index.vue
+  Component:   Index
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="mx-auto max-w-2xl">
-    <div class="rounded-xl bg-white p-8 shadow">
-      <h1 class="mb-2 text-2xl font-bold text-gray-900">{{ $trans('student.online_registration.registration') || 'Online registration' }}</h1>
-      <p class="mb-6 text-sm text-gray-500">{{ $trans('student.online_registration.enter_number') || 'Enter your registration number to continue.' }}</p>
-      <form @submit.prevent="verify">
-        <base-input v-model="number" :label="$trans('student.online_registration.registration_number') || 'Registration number'" class="mb-4" required />
-        <base-button type="submit" :loading="loading" class="w-full">{{ $trans('global.continue') || 'Continue' }}</base-button>
-      </form>
-    </div>
+  <div class="space-y-6">
+    <PageHeader :title="$t('student.onlineregistration.onlineregistration')" :navs="navs">
+      <PageHeaderAction :name="'Index'" :title="$t('student.onlineregistration.onlineregistration')" :actions="['list']" />
+    </PageHeader>
+    <ParentTransition appear :visibility="true">
+      <DataTable :title="$t('student.onlineregistration.onlineregistration')" :headers="headers" :meta="meta" module="student.onlineregistration">
+        <TableRow v-for="item in items" :key="item.id || item.uuid">
+          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
+          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
+          <TableCell class="text-right">
+            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
+            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
+          </TableCell>
+        </TableRow>
+        <TableRow v-if="!items.length">
+          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
+            No records found.
+          </TableCell>
+        </TableRow>
+      </DataTable>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-import http from '@/core/http';
+<script setup>
+import { ref } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
+import { Button } from '@/components/ui/button'
+import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
+import DataTable from '@/views/Components/DataTable.vue'
 
-export default {
-  data() {
-    return { number: '', loading: false };
-  },
-  methods: {
-    async verify() {
-      this.loading = true;
-      try {
-        const res = await http.post('/app/online-registrations/verify', { number: this.number });
-        this.$router.push({ name: 'OnlineRegistrationForm', params: { number: this.number } });
-      } catch (error) {
-        // handled by toast
-      } finally {
-        this.loading = false;
-      }
-    },
-  },
-};
+const props = defineProps({
+  items: { type: Array, default: () => [] },
+  meta: { type: Object, default: () => ({}) },
+})
+
+const headers = [
+  { name: 'name', label: 'Name' },
+  { name: 'createdAt', label: 'Created' },
+  { name: 'action', label: 'Actions' },
+]
+
+const navs = [
+  { label: 'Student', path: 'Student' },
+  { label: 'Online Registration', path: 'Index' },
+]
+
+const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
+const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
 </script>

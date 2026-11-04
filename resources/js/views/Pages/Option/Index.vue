@@ -1,72 +1,59 @@
+<!--
+  Source path: resources/js/views/Pages/Option/Index.vue
+  Component:   Index
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div>
-    <page-header :title="title" />
-    <key-search v-if="meta.keySearch" v-model="search" class="mb-4" />
-    <data-table
-      :columns="columns"
-      :rows="list"
-      :meta="metaData"
-      :loading="loading"
-      @page-change="fetch"
-    >
-      <template #actions="{ row }">
-        <row-action>
-          <dropdown-item @click="edit(row)">{{ $trans('global.edit') || 'Edit' }}</dropdown-item>
-          <dropdown-item variant="danger" @click="remove(row)">{{ $trans('global.delete') || 'Delete' }}</dropdown-item>
-        </row-action>
-      </template>
-    </data-table>
-    <base-button class="mt-4" :to="{ name: createName }">{{ $trans('global.add') || 'Add' }}</base-button>
+  <div class="space-y-6">
+    <PageHeader :title="$t('option.index.vue.index.vue')" :navs="navs">
+      <PageHeaderAction :name="'Index'" :title="$t('option.index.vue.index.vue')" :actions="['list']" />
+    </PageHeader>
+    <ParentTransition appear :visibility="true">
+      <DataTable :title="$t('option.index.vue.index.vue')" :headers="headers" :meta="meta" module="option.index.vue">
+        <TableRow v-for="item in items" :key="item.id || item.uuid">
+          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
+          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
+          <TableCell class="text-right">
+            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
+            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
+          </TableCell>
+        </TableRow>
+        <TableRow v-if="!items.length">
+          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
+            No records found.
+          </TableCell>
+        </TableRow>
+      </DataTable>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      columns: [
-        { key: 'name', label: this.$trans('global.name') || 'Name' },
-        { key: 'description', label: this.$trans('global.description') || 'Description' },
-      ],
-      search: '',
-    };
-  },
-  computed: {
-    list: (vm) => vm.moduleState.list,
-    metaData: (vm) => vm.moduleState.listMeta,
-    loading: (vm) => vm.moduleState.loading,
-    meta() {
-      return this.$route.meta || {};
-    },
-    namespace() {
-      return this.meta.queryType || null;
-    },
-    moduleState() {
-      return this.namespace ? this.$store.state[this.namespace] : { list: [], listMeta: {}, loading: false };
-    },
-    createName() {
-      return (this.meta.prefix || '') + 'Create';
-    },
-    title() {
-      return this.$trans(this.meta.trans || this.meta.label || 'global.list');
-    },
-  },
-  created() {
-    this.fetch();
-  },
-  methods: {
-    fetch(page = 1) {
-      if (!this.namespace) return;
-      this.$store.dispatch(this.namespace + '/list', { params: { page, keyword: this.search } });
-    },
-    edit(row) {
-      this.$router.push({ name: (this.meta.prefix || '') + 'Edit', params: { uuid: row.uuid } });
-    },
-    async remove(row) {
-      const confirmed = await this.$swal('Delete this record?');
-      if (!confirmed.isConfirmed) return;
-      this.$store.dispatch(this.namespace + '/destroy', row.uuid).then(() => this.fetch());
-    },
-  },
-};
+<script setup>
+import { ref } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
+import { Button } from '@/components/ui/button'
+import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
+import DataTable from '@/views/Components/DataTable.vue'
+
+const props = defineProps({
+  items: { type: Array, default: () => [] },
+  meta: { type: Object, default: () => ({}) },
+})
+
+const headers = [
+  { name: 'name', label: 'Name' },
+  { name: 'createdAt', label: 'Created' },
+  { name: 'action', label: 'Actions' },
+]
+
+const navs = [
+  { label: 'Option', path: 'Option' },
+  { label: 'Index.vue', path: 'Index' },
+]
+
+const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
+const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
 </script>

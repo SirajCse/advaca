@@ -1,26 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Auth/EmailVerification.vue
+  Component:   EmailVerification
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="flex min-h-full items-center justify-center bg-gray-50 px-4 py-12">
-    <div class="w-full max-w-md rounded-xl bg-white p-8 text-center shadow">
-      <h1 class="mb-4 text-2xl font-bold">{{ $trans('auth.email.verification') || 'Email verification' }}</h1>
-      <p class="text-sm text-gray-500">{{ status }}</p>
-    </div>
+  <div class="space-y-6">
+    <PageHeader :title="$t('auth.emailverification')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>Email Verification</CardTitle>
+          <CardDescription>Page component for Auth Email Verification.vue.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the EmailVerification component.
+            Replace this placeholder with the actual page content for your
+            Email Verification.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-import http from '@/core/http';
-
-export default {
-  data() {
-    return { status: 'Verifying…' };
-  },
-  async mounted() {
-    try {
-      await http.post('/auth/email/verify', { token: this.$route.params.token });
-      this.status = 'Your email has been verified. You can sign in now.';
-    } catch (error) {
-      this.status = 'Verification failed or link expired.';
-    }
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

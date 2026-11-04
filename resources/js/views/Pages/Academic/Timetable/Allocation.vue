@@ -1,28 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Academic/Timetable/Allocation.vue
+  Component:   Allocation
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div>
-    <page-header v-if="standalone" :title="$trans('global.detail')" />
-    <base-card>
-      <slot />
-      <p class="py-6 text-center text-sm text-gray-400">
-        {{ $trans('global.content_placeholder') || 'Content area' }}
-      </p>
-    </base-card>
+  <div class="space-y-6">
+    <PageHeader :title="$t('academic.allocation')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>Allocation</CardTitle>
+          <CardDescription>Page component for Academic Timetable.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the Allocation component.
+            Replace this placeholder with the actual page content for your
+            Allocation.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-/**
- * Reconstructed page — original path: resources/js/views/Pages/Academic/Timetable/Allocation.vue
- * Route: /academic/timetables/:uuid/allocation
- * Vuex module: (general)
- *
- * This component was rendered inside its parent route in the original app;
- * extend the template with the feature-specific UI.
- */
-export default {
-  name: "Allocation",
-  props: {
-    standalone: { type: Boolean, default: false },
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

@@ -1,7 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Errors/403.vue
+  Component:   403
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <error-page :code="403" :message="$trans('general.errors.forbidden') || 'You do not have permission to access this page'" />
+  <div class="space-y-6">
+    <PageHeader :title="$t('errors.403')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>403</CardTitle>
+          <CardDescription>Page component for Errors 403.vue.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the 403 component.
+            Replace this placeholder with the actual page content for your
+            403.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
+  </div>
 </template>
 
-<script>
-export default { name: 'Error403' };
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

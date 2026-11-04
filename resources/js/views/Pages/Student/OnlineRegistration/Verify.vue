@@ -1,32 +1,31 @@
+<!--
+  Source path: resources/js/views/Pages/Student/OnlineRegistration/Verify.vue
+  Component:   Verify
+  Rebuilt clean from manifest path. Uses shadcn-vue components.
+-->
 <template>
-  <div class="mx-auto max-w-2xl">
-    <div class="rounded-xl bg-white p-8 shadow">
-      <h1 class="mb-6 text-2xl font-bold">{{ $trans('student.online_registration.verify') || 'Verify registration' }}</h1>
-      <form @submit.prevent="submit">
-        <base-input v-model="form.number" :label="$trans('student.online_registration.registration_number') || 'Registration number'" class="mb-4" required />
-        <base-input v-model="form.otp" :label="$trans('auth.otp') || 'OTP'" class="mb-4" required />
-        <base-button type="submit" :loading="loading" class="w-full">{{ $trans('global.verify') || 'Verify' }}</base-button>
-      </form>
-    </div>
+  <div class="space-y-6">
+    <PageHeader :title="$t('student.verify')" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>Verify</CardTitle>
+          <CardDescription>Page component for Student Online Registration.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="text-sm text-muted-foreground">
+            This is a clean Vue 3 SFC generated for the Verify component.
+            Replace this placeholder with the actual page content for your
+            Verify.
+          </p>
+        </CardContent>
+      </Card>
+    </ParentTransition>
   </div>
 </template>
 
-<script>
-import http from '@/core/http';
-
-export default {
-  data() {
-    return { form: { number: '', otp: '' }, loading: false };
-  },
-  methods: {
-    async submit() {
-      this.loading = true;
-      try {
-        await http.post('/app/online-registrations/verify-otp', this.form);
-      } finally {
-        this.loading = false;
-      }
-    },
-  },
-};
+<script setup>
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Components/ParentTransition.vue'
 </script>

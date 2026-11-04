@@ -1,11 +1,7 @@
 {
-    "compilerOptions": {
-        "baseUrl": ".",
-        "paths": {
-            "@/*": ["resources/js/*"]
-        },
-        "module": "ESNext",
-        "moduleResolution": "Bundler"
-    },
-    "exclude": ["node_modules", "public"]
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["resources/js/*"] }
+  },
+  "exclude": ["node_modules", "public"]
 }
