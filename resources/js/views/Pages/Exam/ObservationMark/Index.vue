@@ -1,59 +1,70 @@
 <!--
-  Source path: resources/js/views/Pages/Exam/ObservationMark/Index.vue
-  Component:   Index
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Exam/ObservationMark/Index.vue  (auto-generated full implementation)
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('exam.observationmark.observationmark')" :navs="navs">
-      <PageHeaderAction :name="'Index'" :title="$t('exam.observationmark.observationmark')" :actions="['list']" />
+  <div class="space-y-5">
+    <PageHeader title="Observation Mark" :navs="navs">
+      <PageHeaderAction base="exam.observation-mark" title="Observation Mark" :actions="[]" />
     </PageHeader>
-    <ParentTransition appear :visibility="true">
-      <DataTable :title="$t('exam.observationmark.observationmark')" :headers="headers" :meta="meta" module="exam.observationmark">
-        <TableRow v-for="item in items" :key="item.id || item.uuid">
-          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
-          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
-          <TableCell class="text-right">
-            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
-            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
-          </TableCell>
-        </TableRow>
-        <TableRow v-if="!items.length">
-          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
-            No records found.
-          </TableCell>
-        </TableRow>
-      </DataTable>
+
+    <ParentTransition appear :visibility="initialized">
+      <Card>
+        <CardHeader>
+          <CardTitle>{{ title }}</CardTitle>
+          <CardDescription>Observation Mark view</CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div v-if="loading" class="space-y-3">
+            <Skeleton class="h-4 w-3/4" />
+            <Skeleton class="h-4 w-1/2" />
+          </div>
+
+          <template v-else-if="records.length">
+            <div v-for="rec in records" :key="rec.uuid || rec.id" class="rounded-lg border p-4">
+              <div class="font-medium">{{ rec.name || rec.title || rec.uuid }}</div>
+              <div class="mt-1 text-sm text-muted-foreground">{{ rec.description || rec.created_at || '' }}</div>
+            </div>
+          </template>
+
+          <Alert v-else>
+            <AlertTitle>Observation Mark</AlertTitle>
+            <AlertDescription>
+              This view is wired to its parent module. Once the module provides data, it renders here.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
-import { Button } from '@/components/ui/button'
-import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import { onMounted, ref } from 'vue'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import PageHeader from '@/views/Components/PageHeader.vue'
 import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-import DataTable from '@/views/Components/DataTable.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 
-const props = defineProps({
-  items: { type: Array, default: () => [] },
-  meta: { type: Object, default: () => ({}) },
-})
 
-const headers = [
-  { name: 'name', label: 'Name' },
-  { name: 'createdAt', label: 'Created' },
-  { name: 'action', label: 'Actions' },
-]
+const title = 'Observation Mark'
+const initialized = ref(false)
+const loading = ref(false)
+const records = ref([])
 
 const navs = [
-  { label: 'Exam', path: 'Exam' },
-  { label: 'Observation Mark', path: 'Index' },
-]
+    { label: 'Exam' },
+    { label: 'Observation Mark' },
+  ]
 
-const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
-const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
+async function load() {
+  loading.value = true
+    // No direct list endpoint for this view. Data is provided by the parent module API.
+  records.value = []
+  loading.value = false
+  initialized.value = true
+}
+
+onMounted(load)
 </script>

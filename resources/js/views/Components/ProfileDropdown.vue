@@ -1,52 +1,54 @@
-<template>
-  <v-dropdown>
-    <button type="button" class="flex items-center gap-2 rounded-full p-1 hover:bg-gray-100">
-      <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-        {{ initials }}
-      </span>
-    </button>
-    <template #popper>
-      <div class="min-w-[180px] rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
-        <div class="border-b border-gray-100 px-4 py-2">
-          <p class="text-sm font-semibold text-gray-800">{{ user.name || 'User' }}</p>
-          <p class="text-xs text-gray-400">{{ user.email }}</p>
-        </div>
-        <router-link v-for="item in items" :key="item.label" :to="item.to" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-          {{ item.label }}
-        </router-link>
-        <button type="button" class="block w-full px-4 py-2 text-left text-sm text-danger hover:bg-danger-label" @click="logout">
-          {{ $trans('auth.logout') || 'Logout' }}
-        </button>
-      </div>
-    </template>
-  </v-dropdown>
-</template>
+<script setup>
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { KeyRound, LogOut, UserCircle } from 'lucide-vue-next'
 
-<script>
-export default {
-  name: 'ProfileDropdown',
-  computed: {
-    user() {
-      return this.$store.state.auth.user || {};
-    },
-    initials() {
-      const name = this.user.name || 'U';
-      return name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
-    },
-  },
-  data() {
-    return {
-      items: [
-        { label: 'Profile', to: { name: 'UserProfile' } },
-        { label: 'Settings', to: { name: 'TeamConfig' } },
-      ],
-    };
-  },
-  methods: {
-    async logout() {
-      await this.$store.dispatch('auth/logout');
-      this.$router.push({ name: 'Login' });
-    },
-  },
-};
+const auth = useAuthStore()
+const router = useRouter()
+
+async function doLogout() {
+  await auth.logout()
+  router.push('/login')
+}
+
+const initials = (auth.user?.profile?.name || auth.user?.username || 'U').slice(0, 2).toUpperCase()
 </script>
+
+<template>
+  <DropdownMenu>
+    <DropdownMenuTrigger as-child>
+      <Button variant="ghost" class="relative h-8 w-8 rounded-full">
+        <Avatar class="h-8 w-8">
+          <AvatarImage v-if="auth.user?.avatar" :src="auth.user.avatar" :alt="auth.user?.profile?.name" />
+          <AvatarFallback>{{ initials }}</AvatarFallback>
+        </Avatar>
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" class="w-56">
+      <DropdownMenuLabel>
+        <div class="font-medium">{{ auth.user?.profile?.name || auth.user?.username }}</div>
+        <div class="text-xs font-normal text-muted-foreground">{{ auth.user?.email }}</div>
+      </DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem @click="router.push('/profile')">
+        <UserCircle class="h-4 w-4" />
+        Profile
+      </DropdownMenuItem>
+      <DropdownMenuItem @click="router.push('/profile/password')">
+        <KeyRound class="h-4 w-4" />
+        Change password
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem variant="destructive" @click="doLogout">
+        <LogOut class="h-4 w-4" />
+        Logout
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+</template>

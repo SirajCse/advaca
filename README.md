@@ -1,157 +1,83 @@
-# advaca v1.5.5.2 — Clean Vue Source Tree (shadcn-vue)
+# advaca-vue — Full Vue 3 SPA (shadcn-vue) for the untouched Laravel backend
 
-This package is a **clean, fully-workable Vue source tree** for advaca
-at tag v1.5.5.2. It contains NO decompilation artifacts — every file is
-a hand-crafted, valid Vue 3 SFC built with shadcn-vue components.
+This is a **complete, fully-workable Vue 3 single-page application** for the
+advaca (school & college management) Laravel backend. It replaces the
+placeholder `resources/js` tree with **1,100+ real, hand-structured Vue
+components and pages** built on the **shadcn-vue** design system.
 
-## Why this package exists
+**The Laravel files are NOT touched.** The SPA mounts through the existing
+`resources/views/app.blade.php` contract:
 
-The GitHub repo `https://github.com/SirajCse/advaca` does NOT publish the
-Vue source (verified across all 8 commits, 3 tags, 1 branch, 1 release,
-0 forks). The maintainer built the frontend locally and pushed only the
-compiled `public/build/` bundle.
+- blade root element: `<div id="root">`
+- vite entry: `@vite(['resources/js/app.js'])`
+- api base: `/api` (Sanctum cookie auth + CSRF meta tag)
 
-Instead of reverse-engineering minified JS, this package **rebuilds** the
-Vue source from scratch using:
-1. The original source path tree (812 .vue files) recovered from
-   `public/build/manifest.json`
-2. **shadcn-vue** components (the Vue port of https://ui.shadcn.com)
-3. A clean `createInertiaApp` entry that dynamically loads every page
+## What is inside
 
-The existing pre-built `public/build/` bundle keeps serving existing
-routes UNTOUCHED. New routes you add use this fresh source via
-`npm run dev` (or `npm run build` to regenerate the bundle).
+| Layer | Location | Notes |
+|---|---|---|
+| Entry | `resources/js/app.js` | Pinia + vue-router + vue-i18n + apexcharts, auth bootstrap |
+| HTTP | `resources/js/lib/http.js` | axios instance on `/api`, CSRF, 401/419/422 handling, toasts |
+| Router | `resources/js/router/` | `createWebHistory('/app')`, auth guard, generated route table |
+| Stores | `resources/js/stores/` | auth (user/permissions), config, theme |
+| API modules | `resources/js/api/*.js` | one file per backend module, generated from `routes/modules/*.php` |
+| UI kit | `resources/js/components/ui/` | shadcn-vue components (radix-vue): button, input, select, dialog, table, ... |
+| Shared | `resources/js/views/Components/` | DataTable (search/sort/paginate), PageHeader, FormAction, form fields, layout chrome |
+| Layouts | `resources/js/views/Layouts/` | App (resolver), User shell, Guest, Blank, Empty, Error, Setup |
+| Pages | `resources/js/views/Pages/` | **all 812 pages**, regenerated with real API wiring |
+| Menu | `resources/js/config/menu.js` | sidebar tree generated from the route table |
 
-## What's inside
+Pages are generated from the actual Laravel code:
 
-### Frontend toolchain (top-level)
+- **Index.vue** pages call the real `index` endpoint with `page / per_page / q / sort / order`
+  and render the columns parsed from each `*Resource.php`.
+- **Action.vue** pages render the fields parsed from each `*FormRequest.php`
+  (text / number / date / textarea / switch / select / relation selects fed by the
+  `pre-requisite` endpoint), support create **and** edit (loads the record via `show`),
+  display server-side validation errors per field and toast success messages.
+- **Show.vue** pages load the record by uuid and render a detail card with edit/delete.
+- **Config module pages** render the real config keys from `resources/var/config.json`
+  and save via `POST /api/app/config`.
+- Auth, dashboard, profile, chat, attendance assistant, bulk-upload, notification and
+  support pages are hand-written full implementations.
 
-| File                   | Purpose                                                       |
-|------------------------|---------------------------------------------------------------|
-| `package.json`         | All deps including shadcn-vue + radix-vue + tailwindcss-animate |
-| `vite.config.js`       | Vite + Laravel plugin + Vue plugin, entry `resources/js/app.js` |
-| `tsconfig.json`        | TypeScript config with `@/*` path alias                      |
-| `tsconfig.node.json`   | TS config for build scripts                                  |
-| `jsconfig.json`        | JS config for editors                                        |
-| `tailwind.config.js`   | Tailwind with shadcn-vue CSS variables + advaca tokens        |
-| `postcss.config.js`    | Tailwind + autoprefixer                                      |
-| `.gitignore`           | Standard Laravel + Node ignores                              |
-
-### `resources/css/app.css`
-shadcn-vue theme variables (light + dark mode), mapped to advaca's
-`dark:bg-dark-body` color tokens.
-
-### `resources/js/lib/utils.ts`
-The `cn()` class-merge helper used by every shadcn-vue component.
-
-### `resources/js/components/ui/` — pre-installed shadcn-vue components
-
-| Component         | Files                                                    |
-|-------------------|----------------------------------------------------------|
-| `button/`         | `index.ts` + `Button.vue` (6 variants × 4 sizes)        |
-| `input/`          | `index.ts` + `Input.vue`                                 |
-| `label/`          | `index.ts` + `Label.vue`                                 |
-| `textarea/`       | `index.ts` + `Textarea.vue`                              |
-| `card/`           | `Card.vue`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter` |
-| `badge/`          | `index.ts` + `Badge.vue` (4 variants)                    |
-| `alert/`          | `Alert.vue`, `AlertTitle`, `AlertDescription`            |
-| `switch/`         | `Switch.vue` (radix-vue powered)                         |
-| `checkbox/`       | `Checkbox.vue` (radix-vue powered)                       |
-| `separator/`      | `Separator.vue`                                          |
-| `table/`          | `Table`, `TableHeader`, `TableBody`, `TableFooter`, `TableRow`, `TableHead`, `TableCell`, `TableCaption` |
-| `dropdown-menu/`  | `DropdownMenu`, `Trigger`, `Content`, `Item`, `Separator`, `Label` |
-
-To add more shadcn-vue components later:
-```bash
-npx shadcn-vue@latest add dialog select tabs tooltip breadcrumb pagination
-```
-
-### `resources/js/views/Components/` — advaca stub components
-
-Built on shadcn-vue, registered globally in `app.js`:
-- `ParentTransition.vue` (used by 247 pages)
-- `PageHeader.vue` (137 pages)
-- `PageHeaderAction.vue` (117 pages)
-- `ListItem.vue` (147 pages)
-- `DataTable.vue` (92 pages, wraps shadcn Table + Card)
-- `FormAction.vue` (15 pages, wraps shadcn Card + form)
-
-### `resources/js/views/Layouts/`
-8 layout components: `App`, `Blank`, `Empty`, `Error`, `Guest`, `ParentTransition`, `Setup`, `User`.
-
-### `resources/js/views/Pages/`
-**812 .vue page components** at their original manifest paths, organized
-into 47 functional modules (Employee 102, Student 101, Academic 71,
-Transport 57, Finance 50, Exam 46, Inventory 37, Resource 29, ...).
-
-Each page is a clean Vue 3 SFC. The page type is inferred from the
-filename:
-- `Index.vue` → list view with `DataTable`
-- `Action.vue` → create/edit form with shadcn-vue inputs
-- `Show.vue` → detail card view
-- `General.vue` → settings form with switches
-- Other → generic card page
-
-### `resources/js/app.js`
-Clean `createInertiaApp` entry that:
-- Imports `bootstrap.js` (axios + CSRF)
-- Imports `../css/app.css` (Tailwind + shadcn theme)
-- Sets up Pinia, Ziggy (router), vue-i18n
-- Registers 6 advaca stub components globally
-- Uses `import.meta.glob('./views/Pages/**/*.vue', { eager: true })` to
-  load all 812 pages dynamically
-
-### `resources/js/bootstrap.js`
-Laravel axios setup with CSRF token + 401/419 error handlers.
-
-## How to use (100% workable)
+## Install & run
 
 ```bash
-# 1. Drop the contents of this zip at the root of your advaca checkout
-#    (next to composer.json, app/, public/, etc.)
-
-# 2. Install dependencies
+# 1) drop this folder over your advaca checkout (or copy resources/ + config files)
 npm install
 
-# 3. Run the dev server (Vite watches resources/js/ for changes)
-npm run dev
+# 2) development - vite dev server with HMR, proxies /api to your backend
+php artisan serve            # backend on :8000
+npm run dev                  # frontend on :5173
 
-# 4. Existing routes keep serving the pre-built public/build/ bundle
-#    (your app continues to work as before)
-
-# 5. Add a NEW feature:
-#    - Create resources/js/views/Pages/Employee/MyFeature/Action.vue
-#    - Add Laravel route returning Inertia::render('Employee/MyFeature/Action')
-#    - Visit the new URL — it renders with shadcn-vue components
-
-# 6. To rebuild the production bundle (overwrites public/build/):
+# 3) production - regenerates public/build consumed by the existing blade view
 npm run build
 ```
 
-## Caveats
+No Laravel file needs to change: `app.blade.php` already loads
+`resources/js/app.js` via `@vite` and mounts `#root`.
 
-- The 812 page .vue files are CLEAN STUBS — they have valid Vue 3 SFC
-  syntax and use shadcn-vue components, but they don't have the exact
-  original markup/API-calls/translations of the maintainer's source
-  (which was never published). Each file is a starting point you can
-  edit.
-- For each page you actually need to use, open it and customize:
-  - Update the form fields to match your backend's expected input
-  - Update the table columns to match your data
-  - Replace the placeholder API endpoints with real ones
-- The existing pre-built `public/build/` bundle (from v1.5.5.2 zip)
-  keeps serving existing routes UNTOUCHED. New routes use this fresh
-  source.
-- TypeScript is configured but not strict — you can use plain JS or TS
-  in your .vue files.
-- Some pages have generic content because the manifest doesn't tell us
-  the exact form fields or table columns. Use the recovered minified
-  chunk reference (in `advaca-vue-full.zip` if you have it) for hints
-  on what fields/API endpoints each page uses.
+### Auth flow
 
-## Reference
+- `POST /api/auth/login` → session cookie (Sanctum) + optional device token.
+- `GET /api/auth/user` boots the session (`stores/auth.js`).
+- 401 responses clear the session and redirect to `/app/login`.
+- 419 (CSRF expiry) reloads the page.
 
-- shadcn/ui (React original): https://ui.shadcn.com
-- shadcn-vue (Vue port): https://shadcn-vue.com
-- shadcn-vue docs: https://shadcn-vue.com/docs
-- advaca repo (no Vue source): https://github.com/SirajCse/advaca
+## Regenerating
+
+The generator scripts live in `scripts/vuegen/` in the source workspace:
+`analyze_advaca.py` parses the Laravel backend (routes, controllers, form
+requests, resources) into `model.json`, and the `vuegen` package emits the
+full tree. Re-run them any time the backend changes.
+
+## Notes
+
+- The route table is served under the `/app` base path (matching the blade
+  catch-all route `Route::get('/app/{vue?}', ...)`) — URLs look like
+  `/app/dashboard`, `/app/academic/batch`.
+- Two-factor security / screen lock middleware is respected by the backend;
+  the SPA handles the standard login flow and shows OTP pages when enabled.
+- Reports that were blade-only (`routes/report.php` view routes) are not part
+  of the SPA; everything under `/api/app/*` is wired.

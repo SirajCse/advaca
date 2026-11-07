@@ -1,9 +1,5 @@
 <template>
-  <footer class="py-4 text-center text-xs text-gray-400">
-    <slot>Powered by Advaca</slot>
+  <footer class="border-t px-6 py-3 text-center text-xs text-muted-foreground">
+    Powered by AdvAca
   </footer>
 </template>
-
-<script>
-export default { name: 'FooterCredit' };
-</script>

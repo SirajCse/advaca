@@ -1,16 +1,4 @@
-<template>
-  <div>
-    <slot />
-  </div>
-</template>
-
-<script>
-/**
- * XCircleIcon (views/Components) — reconstructed scaffold. Globally registered in the original bundle.
- * The compiled bundle does not preserve readable templates, so this component
- * exposes a slot passthrough; extend it to match your desired behavior.
- */
-export default {
-  name: 'XCircleIcon',
-};
+<script setup>
+import { XCircle } from 'lucide-vue-next'
 </script>
+<template><XCircle class="h-4 w-4" /></template>

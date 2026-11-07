@@ -122,3 +122,12 @@
 #26 D:/wamp/www/advaca/artisan(35): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
 #27 {main}
 "} 
+[2026-11-05 01:48:03] production.ERROR: There are no commands defined in the "ziggy" namespace. {"user":null,"url":"GET http://advaca.test","exception":"[object] (Symfony\\Component\\Console\\Exception\\NamespaceNotFoundException(code: 0): There are no commands defined in the \"ziggy\" namespace. at D:/wamp/www/advaca/vendor/symfony/console/Application.php:695)
+[stacktrace]
+#0 D:/wamp/www/advaca/vendor/symfony/console/Application.php(744): Symfony/Component/Console/Application->findNamespace('ziggy')
+#1 D:/wamp/www/advaca/vendor/symfony/console/Application.php(299): Symfony/Component/Console/Application->find('ziggy:generate')
+#2 D:/wamp/www/advaca/vendor/symfony/console/Application.php(196): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#3 D:/wamp/www/advaca/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#4 D:/wamp/www/advaca/artisan(35): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#5 {main}
+"} 

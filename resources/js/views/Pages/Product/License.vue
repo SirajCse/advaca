@@ -1,31 +1,30 @@
-<!--
-  Source path: resources/js/views/Pages/Product/License.vue
-  Component:   License
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
--->
+<script setup>
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import { Badge } from '@/components/ui/badge'
+
+const version = '1.5.5.2'
+</script>
+
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('product.license')" />
-    <ParentTransition appear :visibility="true">
-      <Card>
-        <CardHeader>
-          <CardTitle>License</CardTitle>
-          <CardDescription>Page component for Product License.vue.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p class="text-sm text-muted-foreground">
-            This is a clean Vue 3 SFC generated for the License component.
-            Replace this placeholder with the actual page content for your
-            License.
-          </p>
-        </CardContent>
-      </Card>
-    </ParentTransition>
+  <div class="space-y-5">
+    <PageHeader title="License" :navs="[{ label: 'Product', path: '/product' }, { label: 'License' }]" />
+    <Card>
+      <CardHeader>
+        <CardTitle>License details</CardTitle>
+        <CardDescription>Installation version and license state</CardDescription>
+      </CardHeader>
+      <CardContent class="space-y-4 text-sm">
+        <div class="flex items-center gap-3">
+          <span class="text-muted-foreground">Version</span>
+          <Badge variant="secondary">v{{ version }}</Badge>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-muted-foreground">License</span>
+          <Badge variant="success">Active</Badge>
+        </div>
+        <p class="text-muted-foreground">Contact your vendor for renewal or upgrade options.</p>
+      </CardContent>
+    </Card>
   </div>
 </template>
-
-<script setup>
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-</script>

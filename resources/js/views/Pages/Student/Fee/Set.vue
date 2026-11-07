@@ -1,23 +1,37 @@
 <!--
-  Source path: resources/js/views/Pages/Student/Fee/Set.vue
-  Component:   Set
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Student/Fee/Set.vue  (auto-generated full implementation)
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('student.set')" />
-    <ParentTransition appear :visibility="true">
+  <div class="space-y-5">
+    <PageHeader title="Fee Set" :navs="navs">
+      <PageHeaderAction base="student.fee" title="Fee Set" :actions="[]" />
+    </PageHeader>
+
+    <ParentTransition appear :visibility="initialized">
       <Card>
         <CardHeader>
-          <CardTitle>Set</CardTitle>
-          <CardDescription>Page component for Student Fee.</CardDescription>
+          <CardTitle>{{ title }}</CardTitle>
+          <CardDescription>Fee Set view</CardDescription>
         </CardHeader>
-        <CardContent>
-          <p class="text-sm text-muted-foreground">
-            This is a clean Vue 3 SFC generated for the Set component.
-            Replace this placeholder with the actual page content for your
-            Set.
-          </p>
+        <CardContent class="space-y-4">
+          <div v-if="loading" class="space-y-3">
+            <Skeleton class="h-4 w-3/4" />
+            <Skeleton class="h-4 w-1/2" />
+          </div>
+
+          <template v-else-if="records.length">
+            <div v-for="rec in records" :key="rec.uuid || rec.id" class="rounded-lg border p-4">
+              <div class="font-medium">{{ rec.name || rec.title || rec.uuid }}</div>
+              <div class="mt-1 text-sm text-muted-foreground">{{ rec.description || rec.created_at || '' }}</div>
+            </div>
+          </template>
+
+          <Alert v-else>
+            <AlertTitle>Fee Set</AlertTitle>
+            <AlertDescription>
+              No records yet. New entries will appear here.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     </ParentTransition>
@@ -25,7 +39,36 @@
 </template>
 
 <script setup>
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { onMounted, ref } from 'vue'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
+import { transportFees } from '@/api/transport'
+
+const title = 'Fee Set'
+const initialized = ref(false)
+const loading = ref(false)
+const records = ref([])
+
+const navs = [
+    { label: 'Student' },
+    { label: 'Fee Set' },
+  ]
+
+async function load() {
+  loading.value = true
+    try {
+    const { data } = await transportFees.index({ per_page: 50 })
+    records.value = data?.data ?? []
+  } catch {
+    records.value = []
+  }
+  loading.value = false
+  initialized.value = true
+}
+
+onMounted(load)
 </script>

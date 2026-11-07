@@ -1,59 +1,138 @@
 <!--
-  Source path: resources/js/views/Pages/Employee/ProfileEditRequest/Index.vue
-  Component:   Index
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Employee/ProfileEditRequest/Index.vue  (auto-generated full implementation)
+  API:   employeesEmployeeEditRequests @ app/employees/{employee}/edit-requests
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('employee.profileeditrequest.profileeditrequest')" :navs="navs">
-      <PageHeaderAction :name="'Index'" :title="$t('employee.profileeditrequest.profileeditrequest')" :actions="['list']" />
+  <div class="space-y-5">
+    <PageHeader title="Profile Edit Request" :navs="navs">
+      <PageHeaderAction base="employee.profile-edit-request" title="Profile Edit Request" :actions="['create']" />
     </PageHeader>
-    <ParentTransition appear :visibility="true">
-      <DataTable :title="$t('employee.profileeditrequest.profileeditrequest')" :headers="headers" :meta="meta" module="employee.profileeditrequest">
-        <TableRow v-for="item in items" :key="item.id || item.uuid">
-          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
-          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
-          <TableCell class="text-right">
-            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
-            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
-          </TableCell>
-        </TableRow>
-        <TableRow v-if="!items.length">
-          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
-            No records found.
-          </TableCell>
-        </TableRow>
+
+    <ParentTransition appear :visibility="initialized">
+      <DataTable
+        v-model:query="query"
+        title="Profile Edit Request"
+        :headers="headers"
+        :items="items"
+        :meta="meta"
+        :loading="loading"
+        @query="fetchRecords"
+      >
+        <template #item-is_rejected="{ value }">{{ value === 'true' || value === 'Yes' ? 'Yes' : value === 'false' || value === 'No' ? 'No' : '-' }}</template>
+        <template #item-is_approved="{ value }">{{ value === 'true' || value === 'Yes' ? 'Yes' : value === 'false' || value === 'No' ? 'No' : '-' }}</template>
+        <template #item-created_at="{ value }">{{ fmtDate(value) }}</template>
+
+        <template #item-actions="{ item }">
+          <div class="flex items-center justify-end gap-1">
+            <Button v-if="canShow" variant="ghost" size="xs" @click="view(item)">
+              <Eye class="h-3.5 w-3.5" />
+              View
+            </Button>
+            <Button v-if="canEdit" variant="ghost" size="xs" @click="edit(item)">
+              <Pencil class="h-3.5 w-3.5" />
+              Edit
+            </Button>
+            <Button v-if="canDelete" variant="ghost" size="xs" class="text-destructive" @click="remove(item)">
+              <Trash2 class="h-3.5 w-3.5" />
+              Delete
+            </Button>
+          </div>
+        </template>
       </DataTable>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { onMounted, reactive, ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { Button } from '@/components/ui/button'
-import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import { Eye, Pencil, Trash2 } from 'lucide-vue-next'
 import PageHeader from '@/views/Components/PageHeader.vue'
 import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 import DataTable from '@/views/Components/DataTable.vue'
+import { fmtBool, fmtDate } from '@/lib/helpers'
+import { employeesEmployeeEditRequests } from '@/api/employees'
 
-const props = defineProps({
-  items: { type: Array, default: () => [] },
-  meta: { type: Object, default: () => ({}) },
+const router = useRouter()
+const parentVal = computed(() => route.params['employee'] ?? route.query['employee'] ?? '')
+
+const title = 'Profile Edit Request'
+const initialized = ref(false)
+const loading = ref(false)
+const items = ref([])
+const meta = ref({})
+
+const query = reactive({
+  page: 1,
+  per_page: 20,
+  q: '',
+  sort: '',
+  order: '',
 })
 
 const headers = [
-  { name: 'name', label: 'Name' },
-  { name: 'createdAt', label: 'Created' },
-  { name: 'action', label: 'Actions' },
-]
+    { name: 'user', label: 'User' },
+    { name: 'contact', label: 'Contact' },
+    { name: 'status', label: 'Status' },
+    { name: 'is_rejected', label: 'Is rejected' },
+    { name: 'is_approved', label: 'Is approved' },
+    { name: 'comment', label: 'Comment' },
+    { name: 'data', label: 'Data' },
+    { name: 'created_at', label: 'Created at' },
+    { name: 'actions', label: 'Actions', class: 'text-right', sortable: false },
+  ]
 
 const navs = [
-  { label: 'Employee', path: 'Employee' },
-  { label: 'Profile Edit Request', path: 'Index' },
-]
+    { label: 'Employee' },
+    { label: 'Profile Edit Request' },
+  ]
 
-const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
-const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
+const canShow = true
+const canEdit = false
+const canDelete = false
+
+async function fetchRecords(params = {}) {
+  loading.value = true
+  try {
+    const { data } = await employeesEmployeeEditRequests.index(parentVal.value, { ...query, ...params })
+    items.value = data?.data ?? []
+    meta.value = data?.meta ?? { current_page: 1, last_page: 1, total: items.value.length }
+  } catch {
+    items.value = []
+  }
+  loading.value = false
+  initialized.value = true
+}
+
+function view(item) {
+  router.push({ name: 'employee.profile-edit-request.show', params: { uuid: item.uuid || item.id } })
+}
+
+function edit(item) {
+  router.push({ name: 'employee.profile-edit-request.edit', params: { uuid: item.uuid || item.id } })
+}
+
+async function remove(item) {
+  const result = await Swal.fire({
+    title: 'Delete Profile Edit Request?',
+    text: 'This action cannot be undone.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete',
+    confirmButtonColor: '#ef4444',
+  })
+  if (!result.isConfirmed) return
+  try {
+    await employeesEmployeeEditRequests.destroy(parentVal.value, item.uuid || item.id)
+    Swal.fire({ icon: 'success', title: 'Deleted', text: 'Profile Edit Request deleted successfully.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
+    fetchRecords()
+  } catch {
+    // error toast handled globally
+  }
+}
+
+onMounted(() => fetchRecords())
 </script>

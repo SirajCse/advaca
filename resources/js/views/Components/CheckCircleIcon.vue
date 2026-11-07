@@ -1,16 +1,4 @@
-<template>
-  <div>
-    <slot />
-  </div>
-</template>
-
-<script>
-/**
- * CheckCircleIcon (views/Components) — reconstructed scaffold. Globally registered in the original bundle.
- * The compiled bundle does not preserve readable templates, so this component
- * exposes a slot passthrough; extend it to match your desired behavior.
- */
-export default {
-  name: 'CheckCircleIcon',
-};
+<script setup>
+import { CheckCircle2 } from 'lucide-vue-next'
 </script>
+<template><CheckCircle2 class="h-4 w-4" /></template>

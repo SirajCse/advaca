@@ -1,78 +1,154 @@
 <!--
-  Source path: resources/js/views/Pages/Finance/FeeStructure/Action.vue
-  Component:   Action
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Finance/FeeStructure/Action.vue  (auto-generated full implementation - create & edit)
+  API:   financeFeeStructures @ app/finance/fee-structures
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('finance.feestructure')" :navs="navs" />
-    <ParentTransition appear :visibility="true">
-      <FormAction :title="$t('finance.feestructure')" @submit="submit">
-        <template #default>
-          <div class="grid grid-cols-3 gap-6">
-            <div class="col-span-3 sm:col-span-2">
-              <Label for="name">{{ $t('finance.feestructure') }}</Label>
-              <Input id="name" v-model="form.name" class="mt-1" />
-            </div>
-            <div class="col-span-3 sm:col-span-1">
-              <Label for="code">Code</Label>
-              <Input id="code" v-model="form.code" class="mt-1" />
-            </div>
-            <div class="col-span-3">
-              <Label for="description">Description</Label>
-              <Textarea id="description" v-model="form.description" rows="3" class="mt-1" />
-            </div>
-            <div class="col-span-3 sm:col-span-1">
-              <Label for="status">Status</Label>
-              <Switch id="status" v-model:checked="form.status" class="mt-2" />
-            </div>
-          </div>
-        </template>
-        <template #actions>
-          <Button type="submit" :disabled="processing">{ $t('global.save') }</Button>
-          <Button variant="outline" @click="back">Cancel</Button>
-        </template>
+  <div class="space-y-5">
+    <PageHeader :title="isCreate ? 'New Fee Structure' : 'Edit Fee Structure'" :navs="navs">
+      <PageHeaderAction base="finance.fee-structure" title="Fee Structure" :actions="['list']" />
+    </PageHeader>
+
+    <ParentTransition appear :visibility="initialized">
+      <FormAction
+        :title="isCreate ? 'New Fee Structure' : 'Edit Fee Structure'"
+        :processing="processing"
+        :is-create="isCreate"
+        :back-to="{ name: 'finance.fee-structure.index' }"
+        @submit="submit"
+      >
+                <FormSelect
+          v-model="form.type"
+          :options="[{ value: 'course', label: 'Course' }]"
+          label="Type"
+          :required="true"
+          :error="errors.type ? String(errors.type[0] || errors.type) : ''"
+        />
+
+        <FormArrayInput
+          v-model="form.courses"
+          label="Course"
+          :required="true"
+          placeholder="Add value"
+          :error="errors.courses ? String(errors.courses[0] || errors.courses) : ''"
+        />
+
+        <FormArrayInput
+          v-model="form.batches"
+          label="Batch"
+          :required="true"
+          placeholder="Add value"
+          :error="errors.batches ? String(errors.batches[0] || errors.batches) : ''"
+        />
+
+
+        <p v-if="submitError" class="text-sm text-destructive">{{ submitError }}</p>
       </FormAction>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { router } from '@inertiajs/vue3'
-import { Button } from '@/components/ui/button'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 import FormAction from '@/views/Components/FormAction.vue'
+import FormSelect from '@/views/Components/FormSelect.vue'
+import FormRelationSelect from '@/views/Components/FormRelationSelect.vue'
+import FormArrayInput from '@/views/Components/FormArrayInput.vue'
+import { pickPreReq } from '@/lib/helpers'
+import { financeFeeStructures } from '@/api/finance'
 
-const props = defineProps({
-  item: { type: Object, default: () => ({}) },
-})
+const route = useRoute()
+const router = useRouter()
 
-const form = reactive({
-  name: props.item?.name || '',
-  code: props.item?.code || '',
-  description: props.item?.description || '',
-  status: props.item?.status ?? true,
-})
-
+const title = 'Fee Structure'
+const isCreate = computed(() => !route.params.uuid)
+const initialized = ref(false)
 const processing = ref(false)
+const submitError = ref('')
+const errors = ref({})
+const preReq = ref(null)
 
 const navs = [
-  { label: 'Finance', path: 'Finance' },
-  { label: 'Fee Structure', path: 'Action' },
-]
+    { label: 'Finance' },
+    { label: 'Fee Structure' },
+  ]
 
-const submit = () => {
-  processing.value = true
-  router.post('/finance/feestructure', form, {
-    onFinish: () => { processing.value = false },
+const form = reactive({
+    type: "",
+    courses: [],
+    batches: [],
   })
+
+const relationOptions = reactive({})
+
+async function loadPreRequisite() {
+  if (typeof financeFeeStructures.preRequisite !== 'function') return
+  try {
+    const { data } = await financeFeeStructures.preRequisite()
+    preReq.value = data
+        // no relation fields
+  } catch {}
 }
 
-const back = () => router.back()
+async function loadRecordAndPreReq(uuid) {
+  await Promise.all([loadRecord(uuid), loadPreRequisite()])
+}
+
+async function loadRecord(uuid) {
+  try {
+    const { data } = await financeFeeStructures.show(uuid)
+    const record = data?.feestructure ?? data
+        Object.keys(form).forEach((k) => {
+      let v = record[k]
+      if (v && typeof v === 'object' && !Array.isArray(v)) v = v.uuid ?? v.id ?? v.name ?? ''
+      if (v === null || v === undefined) {
+        v = Array.isArray(form[k]) ? [] : (typeof form[k] === 'boolean' ? false : '')
+      }
+      form[k] = v
+    })
+  } catch {
+    // keep defaults
+  }
+}
+
+async function submit() {
+  processing.value = true
+  errors.value = {}
+  submitError.value = ''
+  try {
+    let message
+    if (isCreate.value) {
+      const res = await financeFeeStructures.store({ ...form })
+      message = res.data?.message || 'Fee Structure created successfully.'
+    } else {
+      const res = await financeFeeStructures.update(route.params.uuid, { ...form })
+      message = res.data?.message || 'Fee Structure updated successfully.'
+    }
+    Swal.fire({ icon: 'success', title: 'Success', text: message, toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
+    router.push({ name: 'finance.fee-structure.index' })
+  } catch (e) {
+    if (e.fieldErrors && Object.keys(e.fieldErrors).length) {
+      errors.value = e.fieldErrors
+    }
+    if (e.toastMessage) submitError.value = e.toastMessage
+  }
+  processing.value = false
+}
+
+onMounted(async () => {
+  if (!isCreate.value) {
+    await loadRecordAndPreReq(route.params.uuid)
+  } else {
+    await loadPreRequisite()
+  }
+  initialized.value = true
+})
 </script>

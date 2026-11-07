@@ -1,11 +1,28 @@
-<template>
-  <aside class="w-56 shrink-0">
-    <nav class="rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
-      <slot />
-    </nav>
-  </aside>
-</template>
+<script setup>
+import { computed } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 
-<script>
-export default { name: 'ConfigSidebar' };
+const props = defineProps({
+  sections: { type: Array, default: () => [] },
+})
+
+const route = useRoute()
+
+function isActive(to) {
+  return route.path === to
+}
 </script>
+
+<template>
+  <nav class="flex flex-col gap-1 rounded-lg border bg-card p-2">
+    <RouterLink
+      v-for="s in sections"
+      :key="s.to"
+      :to="s.to"
+      class="rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent"
+      :class="isActive(s.to) ? 'bg-accent font-medium text-accent-foreground' : 'text-muted-foreground'"
+    >
+      {{ s.label }}
+    </RouterLink>
+  </nav>
+</template>

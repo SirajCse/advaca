@@ -1,31 +1,15 @@
-<!--
-  Source path: resources/js/views/Layouts/Setup.vue
-  Component:   Setup
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
--->
+<script setup>
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+</script>
+
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('global.generic')" />
-    <ParentTransition appear :visibility="true">
-      <Card>
-        <CardHeader>
-          <CardTitle>generic</CardTitle>
-          <CardDescription>Page component for the generic.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p class="text-sm text-muted-foreground">
-            This is a clean Vue 3 SFC generated for the Setup component.
-            Replace this placeholder with the actual page content for your
-            generic.
-          </p>
-        </CardContent>
-      </Card>
-    </ParentTransition>
+  <div class="min-h-screen bg-muted/40 p-4 text-foreground md:p-10">
+    <div class="mx-auto max-w-3xl space-y-6">
+      <div class="text-center">
+        <h1 class="text-2xl font-bold">Setup Wizard</h1>
+        <p class="text-sm text-muted-foreground">Configure your AdvAca installation</p>
+      </div>
+      <RouterView />
+    </div>
   </div>
 </template>
-
-<script setup>
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-</script>

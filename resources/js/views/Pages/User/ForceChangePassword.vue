@@ -1,31 +1,49 @@
-<!--
-  Source path: resources/js/views/Pages/User/ForceChangePassword.vue
-  Component:   ForceChangePassword
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
--->
-<template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('user.forcechangepassword')" />
-    <ParentTransition appear :visibility="true">
-      <Card>
-        <CardHeader>
-          <CardTitle>Force Change Password</CardTitle>
-          <CardDescription>Page component for User Force Change Password.vue.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p class="text-sm text-muted-foreground">
-            This is a clean Vue 3 SFC generated for the ForceChangePassword component.
-            Replace this placeholder with the actual page content for your
-            Force Change Password.
-          </p>
-        </CardContent>
-      </Card>
-    </ParentTransition>
-  </div>
-</template>
-
 <script setup>
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
+import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { forceChangePassword } from '@/api/auth'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const auth = useAuthStore()
+const processing = ref(false)
+const form = reactive({ password: '', confirm_password: '' })
+
+async function submit() {
+  processing.value = true
+  try {
+    await forceChangePassword({ ...form })
+    Swal.fire({ icon: 'success', title: 'Password updated', text: 'Please login with your new password.' })
+    auth.clear()
+    router.push('/login')
+  } catch {}
+  processing.value = false
+}
 </script>
+
+<template>
+  <Card>
+    <CardHeader>
+      <CardTitle>Change your password</CardTitle>
+      <CardDescription>For security reasons you must change your password before continuing.</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <form class="max-w-md space-y-4" @submit.prevent="submit">
+        <div class="space-y-1.5">
+          <Label for="np">New password</Label>
+          <Input id="np" v-model="form.password" type="password" required />
+        </div>
+        <div class="space-y-1.5">
+          <Label for="cp">Confirm password</Label>
+          <Input id="cp" v-model="form.confirm_password" type="password" required />
+        </div>
+        <Button type="submit" :disabled="processing">{{ processing ? 'Updating…' : 'Update & continue' }}</Button>
+      </form>
+    </CardContent>
+  </Card>
+</template>

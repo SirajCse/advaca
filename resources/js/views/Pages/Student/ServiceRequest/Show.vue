@@ -1,61 +1,127 @@
 <!--
-  Source path: resources/js/views/Pages/Student/ServiceRequest/Show.vue
-  Component:   Show
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Student/ServiceRequest/Show.vue  (auto-generated full implementation)
+  API:   studentServiceRequests @ app/student/service-requests
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('student.servicerequest')" :navs="navs" />
-    <ParentTransition appear :visibility="true">
-      <Card>
-        <CardHeader>
-          <CardTitle>{{ item.name || item.title || $t('student.servicerequest') }}</CardTitle>
-          <CardDescription>UUID: {{ item.uuid || '-' }}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div class="grid grid-cols-2 gap-4">
+  <div class="space-y-5">
+    <PageHeader title="Service Request" :navs="navs">
+      <PageHeaderAction base="student.service-request" title="Service Request" :actions="['list', 'edit', 'print']" :edit-uuid="uuid" />
+    </PageHeader>
+
+    <ParentTransition appear :visibility="initialized">
+      <div v-if="record" class="space-y-5">
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0">
             <div>
-              <p class="text-sm font-medium text-muted-foreground">Name</p>
-              <p>{{ item.name || '-' }}</p>
+              <CardTitle class="text-lg">{{ record.name || record.title || record.name || 'Detail' }}</CardTitle>
+              <CardDescription>Service Request details</CardDescription>
             </div>
-            <div>
-              <p class="text-sm font-medium text-muted-foreground">Code</p>
-              <p>{{ item.code || '-' }}</p>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-muted-foreground">Created</p>
-              <p>{{ item.createdAt || item.created_at || '-' }}</p>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-muted-foreground">Status</p>
-              <Badge :variant="item.status ? 'default' : 'secondary'">{{ item.status ? 'Active' : 'Inactive' }}</Badge>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button variant="outline" @click="back">Back</Button>
-        </CardFooter>
+            <Button variant="destructive" size="sm" @click="remove">
+              <Trash2 class="h-4 w-4" />
+              Delete
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <dl class="grid gap-x-8 gap-y-4 md:grid-cols-2">
+              <div v-for="field in displayFields" :key="field.name" class="space-y-1">
+                <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{{ field.label }}</dt>
+                <dd class="text-sm">
+                  <Badge v-if="field.name === 'status'" :variant="String(valueOf(field)).includes('active') ? 'success' : 'secondary'">
+                    {{ valueOf(field) }}
+                  </Badge>
+                  <template v-else>{{ valueOf(field) }}</template>
+                </dd>
+              </div>
+            </dl>
+          </CardContent>
+        </Card>
+
+        <slot name="extra" :record="record" />
+      </div>
+      <Card v-else-if="initialized">
+        <CardContent class="py-10 text-center text-muted-foreground">Record not found.</CardContent>
       </Card>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Trash2 } from 'lucide-vue-next'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-import { router } from '@inertiajs/vue3'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
+import { displayValue, fmtDate, fmtDateTime } from '@/lib/helpers'
+import { studentServiceRequests } from '@/api/student'
 
-const props = defineProps({
-  item: { type: Object, default: () => ({}) },
-})
+const route = useRoute()
+const router = useRouter()
+
+const title = 'Service Request'
+const uuid = computed(() => route.params.uuid)
+const initialized = ref(false)
+const record = ref(null)
 
 const navs = [
-  { label: 'Student', path: 'Student' },
-  { label: 'Service Request', path: 'Show' },
-]
+    { label: 'Student' },
+    { label: 'Service Request' },
+  ]
 
-const back = () => router.back()
+const displayFields = [
+    { name: 'uuid', label: 'Uuid', type: 'text' },
+    { name: 'code_number', label: 'Code number', type: 'text' },
+    { name: 'student', label: 'Student', type: 'text' },
+    { name: 'requester', label: 'Requester', type: 'text' },
+    { name: 'type', label: 'Type', type: 'badge' },
+    { name: 'request_type', label: 'Request type', type: 'text' },
+    { name: 'date', label: 'Date', type: 'date' },
+    { name: 'description', label: 'Description', type: 'text' },
+    { name: 'status', label: 'Status', type: 'badge' },
+    { name: 'is_editable', label: 'Is editable', type: 'bool' },
+    { name: 'transport_stoppage', label: 'Transport stoppage', type: 'text' },
+    { name: 'media_token', label: 'Media token', type: 'text' },
+    { name: 'media', label: 'Media', type: 'text' },
+    { name: 'created_at', label: 'Created at', type: 'date' },
+  ]
+
+function valueOf(field) {
+  const v = record.value?.[field.name]
+  if (field.type === 'date') return fmtDate(v)
+  if (field.type === 'datetime') return fmtDateTime(v)
+  return displayValue(v)
+}
+
+async function load() {
+  try {
+    const { data } = await studentServiceRequests.show(uuid.value)
+    record.value = data?.servicerequest ?? data
+  } catch {
+    record.value = null
+  }
+  initialized.value = true
+}
+
+async function remove() {
+  const result = await Swal.fire({
+    title: 'Delete Service Request?',
+    text: 'This action cannot be undone.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete',
+    confirmButtonColor: '#ef4444',
+  })
+  if (!result.isConfirmed) return
+  try {
+    await studentServiceRequests.destroy(uuid.value)
+    Swal.fire({ icon: 'success', title: 'Deleted', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
+    router.push({ name: 'student.service-request.index' })
+  } catch {}
+}
+
+onMounted(load)
 </script>

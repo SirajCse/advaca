@@ -1,78 +1,63 @@
-<!--
-  Source path: resources/js/views/Pages/General/BulkUpload/Action.vue
-  Component:   Action
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
--->
-<template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('general.bulkupload')" :navs="navs" />
-    <ParentTransition appear :visibility="true">
-      <FormAction :title="$t('general.bulkupload')" @submit="submit">
-        <template #default>
-          <div class="grid grid-cols-3 gap-6">
-            <div class="col-span-3 sm:col-span-2">
-              <Label for="name">{{ $t('general.bulkupload') }}</Label>
-              <Input id="name" v-model="form.name" class="mt-1" />
-            </div>
-            <div class="col-span-3 sm:col-span-1">
-              <Label for="code">Code</Label>
-              <Input id="code" v-model="form.code" class="mt-1" />
-            </div>
-            <div class="col-span-3">
-              <Label for="description">Description</Label>
-              <Textarea id="description" v-model="form.description" rows="3" class="mt-1" />
-            </div>
-            <div class="col-span-3 sm:col-span-1">
-              <Label for="status">Status</Label>
-              <Switch id="status" v-model:checked="form.status" class="mt-2" />
-            </div>
-          </div>
-        </template>
-        <template #actions>
-          <Button type="submit" :disabled="processing">{ $t('global.save') }</Button>
-          <Button variant="outline" @click="back">Cancel</Button>
-        </template>
-      </FormAction>
-    </ParentTransition>
-  </div>
-</template>
-
 <script setup>
-import { reactive, ref } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { onMounted, ref } from 'vue'
+import Swal from 'sweetalert2'
+import http from '@/lib/http'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-import FormAction from '@/views/Components/FormAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
+import FormSelect from '@/views/Components/FormSelect.vue'
 
-const props = defineProps({
-  item: { type: Object, default: () => ({}) },
-})
-
-const form = reactive({
-  name: props.item?.name || '',
-  code: props.item?.code || '',
-  description: props.item?.description || '',
-  status: props.item?.status ?? true,
-})
-
+const types = ref([])
+const type = ref('')
+const file = ref(null)
 const processing = ref(false)
 
-const navs = [
-  { label: 'General', path: 'General' },
-  { label: 'Bulk Upload', path: 'Action' },
-]
+onMounted(async () => {
+  try {
+    const { data } = await http.get('/app/bulk-upload/action/pre-requisite')
+    types.value = Object.entries(data || {}).map(([k, v]) => ({ value: k, label: humanize(k) }))
+  } catch {}
+})
 
-const submit = () => {
-  processing.value = true
-  router.post('/general/bulkupload', form, {
-    onFinish: () => { processing.value = false },
-  })
+function humanize(s) {
+  return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-const back = () => router.back()
+async function submit() {
+  if (!type.value || !file.value) return
+  processing.value = true
+  try {
+    const fd = new FormData()
+    fd.append('type', type.value)
+    fd.append('file', file.value)
+    const { data } = await http.post('/app/bulk-upload/action', fd)
+    Swal.fire({ icon: 'success', title: 'Imported', text: data?.message || 'Records imported.' })
+  } catch {}
+  processing.value = false
+}
 </script>
+
+<template>
+  <div class="space-y-5">
+    <PageHeader title="Bulk Upload" :navs="[{ label: 'General' }, { label: 'Bulk Upload' }]" />
+    <ParentTransition appear :visibility="true">
+      <Card>
+        <CardHeader>
+          <CardTitle>Bulk upload</CardTitle>
+          <CardDescription>Import records from an Excel/CSV file</CardDescription>
+        </CardHeader>
+        <CardContent class="max-w-xl space-y-4">
+          <FormSelect v-model="type" :options="types" label="Upload type" required />
+          <div class="space-y-1.5">
+            <Label for="file">File</Label>
+            <Input id="file" type="file" accept=".xlsx,.xls,.csv" @change="(e) => (file = e.target.files?.[0] ?? null)" />
+          </div>
+          <Button :disabled="processing || !type || !file" @click="submit">{{ processing ? 'Importing…' : 'Import' }}</Button>
+        </CardContent>
+      </Card>
+    </ParentTransition>
+  </div>
+</template>

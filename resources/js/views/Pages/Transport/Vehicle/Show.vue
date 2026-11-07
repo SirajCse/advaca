@@ -1,61 +1,127 @@
 <!--
-  Source path: resources/js/views/Pages/Transport/Vehicle/Show.vue
-  Component:   Show
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Transport/Vehicle/Show.vue  (auto-generated full implementation)
+  API:   transportVehicles @ app/transport/vehicles
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('transport.vehicle')" :navs="navs" />
-    <ParentTransition appear :visibility="true">
-      <Card>
-        <CardHeader>
-          <CardTitle>{{ item.name || item.title || $t('transport.vehicle') }}</CardTitle>
-          <CardDescription>UUID: {{ item.uuid || '-' }}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div class="grid grid-cols-2 gap-4">
+  <div class="space-y-5">
+    <PageHeader title="Vehicle" :navs="navs">
+      <PageHeaderAction base="transport.vehicle" title="Vehicle" :actions="['list', 'edit', 'print']" :edit-uuid="uuid" />
+    </PageHeader>
+
+    <ParentTransition appear :visibility="initialized">
+      <div v-if="record" class="space-y-5">
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0">
             <div>
-              <p class="text-sm font-medium text-muted-foreground">Name</p>
-              <p>{{ item.name || '-' }}</p>
+              <CardTitle class="text-lg">{{ record.name || record.title || record.name || 'Detail' }}</CardTitle>
+              <CardDescription>Vehicle details</CardDescription>
             </div>
-            <div>
-              <p class="text-sm font-medium text-muted-foreground">Code</p>
-              <p>{{ item.code || '-' }}</p>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-muted-foreground">Created</p>
-              <p>{{ item.createdAt || item.created_at || '-' }}</p>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-muted-foreground">Status</p>
-              <Badge :variant="item.status ? 'default' : 'secondary'">{{ item.status ? 'Active' : 'Inactive' }}</Badge>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button variant="outline" @click="back">Back</Button>
-        </CardFooter>
+            <Button variant="destructive" size="sm" @click="remove">
+              <Trash2 class="h-4 w-4" />
+              Delete
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <dl class="grid gap-x-8 gap-y-4 md:grid-cols-2">
+              <div v-for="field in displayFields" :key="field.name" class="space-y-1">
+                <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{{ field.label }}</dt>
+                <dd class="text-sm">
+                  <Badge v-if="field.name === 'status'" :variant="String(valueOf(field)).includes('active') ? 'success' : 'secondary'">
+                    {{ valueOf(field) }}
+                  </Badge>
+                  <template v-else>{{ valueOf(field) }}</template>
+                </dd>
+              </div>
+            </dl>
+          </CardContent>
+        </Card>
+
+        <slot name="extra" :record="record" />
+      </div>
+      <Card v-else-if="initialized">
+        <CardContent class="py-10 text-center text-muted-foreground">Record not found.</CardContent>
       </Card>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Trash2 } from 'lucide-vue-next'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-import { router } from '@inertiajs/vue3'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
+import { displayValue, fmtDate, fmtDateTime } from '@/lib/helpers'
+import { transportVehicles } from '@/api/transport'
 
-const props = defineProps({
-  item: { type: Object, default: () => ({}) },
-})
+const route = useRoute()
+const router = useRouter()
+
+const title = 'Vehicle'
+const uuid = computed(() => route.params.uuid)
+const initialized = ref(false)
+const record = ref(null)
 
 const navs = [
-  { label: 'Transport', path: 'Transport' },
-  { label: 'Vehicle', path: 'Show' },
-]
+    { label: 'Transport' },
+    { label: 'Vehicle' },
+  ]
 
-const back = () => router.back()
+const displayFields = [
+    { name: 'uuid', label: 'Uuid', type: 'text' },
+    { name: 'name', label: 'Name', type: 'text' },
+    { name: 'name_with_registration_number', label: 'Name with registration number', type: 'text' },
+    { name: 'registration_number', label: 'Registration number', type: 'text' },
+    { name: 'registration_date', label: 'Registration date', type: 'date' },
+    { name: 'registration_place', label: 'Registration place', type: 'text' },
+    { name: 'type', label: 'Type', type: 'badge' },
+    { name: 'model_number', label: 'Model number', type: 'text' },
+    { name: 'make', label: 'Make', type: 'text' },
+    { name: 'class', label: 'Class', type: 'text' },
+    { name: 'fuel_type', label: 'Fuel type', type: 'text' },
+    { name: 'chassis_number', label: 'Chassis number', type: 'text' },
+    { name: 'engine_number', label: 'Engine number', type: 'text' },
+    { name: 'cubic_capacity', label: 'Cubic capacity', type: 'text' },
+  ]
+
+function valueOf(field) {
+  const v = record.value?.[field.name]
+  if (field.type === 'date') return fmtDate(v)
+  if (field.type === 'datetime') return fmtDateTime(v)
+  return displayValue(v)
+}
+
+async function load() {
+  try {
+    const { data } = await transportVehicles.show(uuid.value)
+    record.value = data?.vehicle ?? data
+  } catch {
+    record.value = null
+  }
+  initialized.value = true
+}
+
+async function remove() {
+  const result = await Swal.fire({
+    title: 'Delete Vehicle?',
+    text: 'This action cannot be undone.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete',
+    confirmButtonColor: '#ef4444',
+  })
+  if (!result.isConfirmed) return
+  try {
+    await transportVehicles.destroy(uuid.value)
+    Swal.fire({ icon: 'success', title: 'Deleted', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
+    router.push({ name: 'transport.vehicle.index' })
+  } catch {}
+}
+
+onMounted(load)
 </script>

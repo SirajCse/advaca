@@ -1,59 +1,135 @@
 <!--
-  Source path: resources/js/views/Pages/Academic/EnrollmentSeat/Index.vue
-  Component:   Index
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Academic/EnrollmentSeat/Index.vue  (auto-generated full implementation)
+  API:   academicEnrollmentSeats @ app/academic/enrollment-seats
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('academic.enrollmentseat.enrollmentseat')" :navs="navs">
-      <PageHeaderAction :name="'Index'" :title="$t('academic.enrollmentseat.enrollmentseat')" :actions="['list']" />
+  <div class="space-y-5">
+    <PageHeader title="Enrollment Seat" :navs="navs">
+      <PageHeaderAction base="academic.enrollment-seat" title="Enrollment Seat" :actions="['create']" />
     </PageHeader>
-    <ParentTransition appear :visibility="true">
-      <DataTable :title="$t('academic.enrollmentseat.enrollmentseat')" :headers="headers" :meta="meta" module="academic.enrollmentseat">
-        <TableRow v-for="item in items" :key="item.id || item.uuid">
-          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
-          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
-          <TableCell class="text-right">
-            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
-            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
-          </TableCell>
-        </TableRow>
-        <TableRow v-if="!items.length">
-          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
-            No records found.
-          </TableCell>
-        </TableRow>
+
+    <ParentTransition appear :visibility="initialized">
+      <DataTable
+        v-model:query="query"
+        title="Enrollment Seat"
+        :headers="headers"
+        :items="items"
+        :meta="meta"
+        :loading="loading"
+        @query="fetchRecords"
+      >
+        <template #item-created_at="{ value }">{{ fmtDate(value) }}</template>
+
+        <template #item-actions="{ item }">
+          <div class="flex items-center justify-end gap-1">
+            <Button v-if="canShow" variant="ghost" size="xs" @click="view(item)">
+              <Eye class="h-3.5 w-3.5" />
+              View
+            </Button>
+            <Button v-if="canEdit" variant="ghost" size="xs" @click="edit(item)">
+              <Pencil class="h-3.5 w-3.5" />
+              Edit
+            </Button>
+            <Button v-if="canDelete" variant="ghost" size="xs" class="text-destructive" @click="remove(item)">
+              <Trash2 class="h-3.5 w-3.5" />
+              Delete
+            </Button>
+          </div>
+        </template>
       </DataTable>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { onMounted, reactive, ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { Button } from '@/components/ui/button'
-import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import { Eye, Pencil, Trash2 } from 'lucide-vue-next'
 import PageHeader from '@/views/Components/PageHeader.vue'
 import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 import DataTable from '@/views/Components/DataTable.vue'
+import { fmtBool, fmtDate } from '@/lib/helpers'
+import { academicEnrollmentSeats } from '@/api/academic'
 
-const props = defineProps({
-  items: { type: Array, default: () => [] },
-  meta: { type: Object, default: () => ({}) },
+const router = useRouter()
+
+const title = 'Enrollment Seat'
+const initialized = ref(false)
+const loading = ref(false)
+const items = ref([])
+const meta = ref({})
+
+const query = reactive({
+  page: 1,
+  per_page: 20,
+  q: '',
+  sort: '',
+  order: '',
 })
 
 const headers = [
-  { name: 'name', label: 'Name' },
-  { name: 'createdAt', label: 'Created' },
-  { name: 'action', label: 'Actions' },
-]
+    { name: 'course', label: 'Course' },
+    { name: 'enrollment_type', label: 'Enrollment type' },
+    { name: 'position', label: 'Position' },
+    { name: 'max_seat', label: 'Max seat' },
+    { name: 'booked_seat', label: 'Booked seat' },
+    { name: 'available_seat', label: 'Available seat' },
+    { name: 'seat', label: 'Seat' },
+    { name: 'created_at', label: 'Created at' },
+    { name: 'actions', label: 'Actions', class: 'text-right', sortable: false },
+  ]
 
 const navs = [
-  { label: 'Academic', path: 'Academic' },
-  { label: 'Enrollment Seat', path: 'Index' },
-]
+    { label: 'Academic' },
+    { label: 'Enrollment Seat' },
+  ]
 
-const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
-const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
+const canShow = true
+const canEdit = true
+const canDelete = true
+
+async function fetchRecords(params = {}) {
+  loading.value = true
+  try {
+    const { data } = await academicEnrollmentSeats.index({ ...query, ...params })
+    items.value = data?.data ?? []
+    meta.value = data?.meta ?? { current_page: 1, last_page: 1, total: items.value.length }
+  } catch {
+    items.value = []
+  }
+  loading.value = false
+  initialized.value = true
+}
+
+function view(item) {
+  router.push({ name: 'academic.enrollment-seat.show', params: { uuid: item.uuid || item.id } })
+}
+
+function edit(item) {
+  router.push({ name: 'academic.enrollment-seat.edit', params: { uuid: item.uuid || item.id } })
+}
+
+async function remove(item) {
+  const result = await Swal.fire({
+    title: 'Delete Enrollment Seat?',
+    text: 'This action cannot be undone.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete',
+    confirmButtonColor: '#ef4444',
+  })
+  if (!result.isConfirmed) return
+  try {
+    await academicEnrollmentSeats.destroy(item.uuid || item.id)
+    Swal.fire({ icon: 'success', title: 'Deleted', text: 'Enrollment Seat deleted successfully.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
+    fetchRecords()
+  } catch {
+    // error toast handled globally
+  }
+}
+
+onMounted(() => fetchRecords())
 </script>

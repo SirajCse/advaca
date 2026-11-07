@@ -1,16 +1,5 @@
-<template>
-  <div>
-    <slot />
-  </div>
-</template>
-
-<script>
-/**
- * ContextMenuItem (views/Components) — reconstructed scaffold. Globally registered in the original bundle.
- * The compiled bundle does not preserve readable templates, so this component
- * exposes a slot passthrough; extend it to match your desired behavior.
- */
-export default {
-  name: 'ContextMenuItem',
-};
+<script setup>
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
+defineProps({ variant: { type: String, default: 'default' } })
 </script>
+<template><DropdownMenuItem :variant="variant"><slot /></DropdownMenuItem></template>

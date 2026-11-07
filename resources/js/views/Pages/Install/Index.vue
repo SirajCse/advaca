@@ -1,59 +1,34 @@
-<!--
-  Source path: resources/js/views/Pages/Install/Index.vue
-  Component:   Index
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
--->
-<template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('install.index.vue.index.vue')" :navs="navs">
-      <PageHeaderAction :name="'Index'" :title="$t('install.index.vue.index.vue')" :actions="['list']" />
-    </PageHeader>
-    <ParentTransition appear :visibility="true">
-      <DataTable :title="$t('install.index.vue.index.vue')" :headers="headers" :meta="meta" module="install.index.vue">
-        <TableRow v-for="item in items" :key="item.id || item.uuid">
-          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
-          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
-          <TableCell class="text-right">
-            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
-            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
-          </TableCell>
-        </TableRow>
-        <TableRow v-if="!items.length">
-          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
-            No records found.
-          </TableCell>
-        </TableRow>
-      </DataTable>
-    </ParentTransition>
-  </div>
-</template>
-
 <script setup>
-import { ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { TableBody, TableRow, TableCell } from '@/components/ui/table'
-import PageHeader from '@/views/Components/PageHeader.vue'
-import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-import DataTable from '@/views/Components/DataTable.vue'
+import { useRouter } from 'vue-router'
 
-const props = defineProps({
-  items: { type: Array, default: () => [] },
-  meta: { type: Object, default: () => ({}) },
-})
-
-const headers = [
-  { name: 'name', label: 'Name' },
-  { name: 'createdAt', label: 'Created' },
-  { name: 'action', label: 'Actions' },
+const router = useRouter()
+const steps = [
+  { title: 'Institution details', desc: 'App name, contact and branding', to: '/config/general' },
+  { title: 'System preferences', desc: 'Locale, timezone, currency & theme', to: '/config/system' },
+  { title: 'Mail configuration', desc: 'SMTP driver and sender identity', to: '/config/mail' },
+  { title: 'SMS & WhatsApp', desc: 'Gateway credentials for messaging', to: '/config/sms' },
+  { title: 'Auth & security', desc: 'Registration, 2FA and OAuth settings', to: '/config/auth' },
+  { title: 'Modules', desc: 'Enable or disable feature modules', to: '/config/module' },
 ]
-
-const navs = [
-  { label: 'Install', path: 'Install' },
-  { label: 'Index.vue', path: 'Index' },
-]
-
-const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
-const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
 </script>
+
+<template>
+  <Card>
+    <CardHeader>
+      <CardTitle>Setup wizard</CardTitle>
+      <CardDescription>Complete the configuration steps below. Each step saves to the backend config service.</CardDescription>
+    </CardHeader>
+    <CardContent class="grid gap-3 md:grid-cols-2">
+      <div v-for="(s, i) in steps" :key="i" class="flex items-center gap-3 rounded-lg border p-4">
+        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{{ i + 1 }}</div>
+        <div class="flex-1">
+          <div class="font-medium">{{ s.title }}</div>
+          <div class="text-xs text-muted-foreground">{{ s.desc }}</div>
+        </div>
+        <Button variant="outline" size="sm" @click="router.push(s.to)">Configure</Button>
+      </div>
+    </CardContent>
+  </Card>
+</template>

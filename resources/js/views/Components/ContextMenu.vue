@@ -1,16 +1,6 @@
-<template>
-  <div>
-    <slot />
-  </div>
-</template>
-
-<script>
-/**
- * ContextMenu (views/Components) — reconstructed scaffold. Globally registered in the original bundle.
- * The compiled bundle does not preserve readable templates, so this component
- * exposes a slot passthrough; extend it to match your desired behavior.
- */
-export default {
-  name: 'ContextMenu',
-};
+<script setup>
+import { DropdownMenu } from '@/components/ui/dropdown-menu'
 </script>
+<template>
+  <DropdownMenu><slot /></DropdownMenu>
+</template>

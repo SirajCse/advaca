@@ -1,59 +1,84 @@
-<!--
-  Source path: resources/js/views/Pages/User/Profile/Index.vue
-  Component:   Index
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
--->
-<template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('user.profile.profile')" :navs="navs">
-      <PageHeaderAction :name="'Index'" :title="$t('user.profile.profile')" :actions="['list']" />
-    </PageHeader>
-    <ParentTransition appear :visibility="true">
-      <DataTable :title="$t('user.profile.profile')" :headers="headers" :meta="meta" module="user.profile">
-        <TableRow v-for="item in items" :key="item.id || item.uuid">
-          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
-          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
-          <TableCell class="text-right">
-            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
-            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
-          </TableCell>
-        </TableRow>
-        <TableRow v-if="!items.length">
-          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
-            No records found.
-          </TableCell>
-        </TableRow>
-      </DataTable>
-    </ParentTransition>
-  </div>
-</template>
-
 <script setup>
-import { ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { onMounted, reactive, ref } from 'vue'
+import Swal from 'sweetalert2'
 import { Button } from '@/components/ui/button'
-import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-import DataTable from '@/views/Components/DataTable.vue'
+import { useAuthStore } from '@/stores/auth'
+import { updateProfile } from '@/api/auth'
 
-const props = defineProps({
-  items: { type: Array, default: () => [] },
-  meta: { type: Object, default: () => ({}) },
+const auth = useAuthStore()
+const processing = ref(false)
+const form = reactive({
+  first_name: '',
+  last_name: '',
+  email: '',
+  contact_number: '',
+  date_of_birth: '',
+  gender: '',
 })
 
-const headers = [
-  { name: 'name', label: 'Name' },
-  { name: 'createdAt', label: 'Created' },
-  { name: 'action', label: 'Actions' },
-]
+onMounted(async () => {
+  await auth.init()
+  const u = auth.user || {}
+  form.first_name = u.profile?.first_name || ''
+  form.last_name = u.profile?.last_name || ''
+  form.email = u.email || ''
+  form.contact_number = u.profile?.contact_number || ''
+  form.date_of_birth = (u.profile?.birth_date || '').slice(0, 10)
+  form.gender = u.profile?.gender?.value || u.profile?.gender || ''
+})
 
-const navs = [
-  { label: 'User', path: 'User' },
-  { label: 'Profile', path: 'Index' },
-]
-
-const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
-const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
+async function save() {
+  processing.value = true
+  try {
+    const { data } = await updateProfile({ ...form })
+    Swal.fire({ icon: 'success', title: 'Saved', text: data?.message || 'Profile updated.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
+    await auth.fetchUser()
+  } catch {}
+  processing.value = false
+}
 </script>
+
+<template>
+  <div class="space-y-5">
+    <PageHeader title="Profile" :navs="[{ label: 'User' }, { label: 'Profile' }]" />
+    <Card>
+      <CardHeader>
+        <CardTitle>Profile details</CardTitle>
+        <CardDescription>Update your personal information</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form class="max-w-xl space-y-4" @submit.prevent="save">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1.5">
+              <Label for="pfn">First name</Label>
+              <Input id="pfn" v-model="form.first_name" />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="pln">Last name</Label>
+              <Input id="pln" v-model="form.last_name" />
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            <Label for="pemail">Email</Label>
+            <Input id="pemail" v-model="form.email" type="email" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1.5">
+              <Label for="pcn">Contact number</Label>
+              <Input id="pcn" v-model="form.contact_number" type="tel" />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="pdob">Date of birth</Label>
+              <Input id="pdob" v-model="form.date_of_birth" type="date" />
+            </div>
+          </div>
+          <Button type="submit" :disabled="processing">{{ processing ? 'Saving…' : 'Save changes' }}</Button>
+        </form>
+      </CardContent>
+    </Card>
+  </div>
+</template>

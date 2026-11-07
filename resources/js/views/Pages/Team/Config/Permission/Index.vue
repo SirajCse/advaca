@@ -1,59 +1,85 @@
-<!--
-  Source path: resources/js/views/Pages/Team/Config/Permission/Index.vue
-  Component:   Index
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
--->
-<template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('team.config.config')" :navs="navs">
-      <PageHeaderAction :name="'Index'" :title="$t('team.config.config')" :actions="['list']" />
-    </PageHeader>
-    <ParentTransition appear :visibility="true">
-      <DataTable :title="$t('team.config.config')" :headers="headers" :meta="meta" module="team.config">
-        <TableRow v-for="item in items" :key="item.id || item.uuid">
-          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
-          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
-          <TableCell class="text-right">
-            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
-            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
-          </TableCell>
-        </TableRow>
-        <TableRow v-if="!items.length">
-          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
-            No records found.
-          </TableCell>
-        </TableRow>
-      </DataTable>
-    </ParentTransition>
-  </div>
-</template>
-
 <script setup>
-import { ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { onMounted, ref } from 'vue'
+import Swal from 'sweetalert2'
+import http from '@/lib/http'
 import { Button } from '@/components/ui/button'
-import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-import DataTable from '@/views/Components/DataTable.vue'
+import FormSelect from '@/views/Components/FormSelect.vue'
 
-const props = defineProps({
-  items: { type: Array, default: () => [] },
-  meta: { type: Object, default: () => ({}) },
+const roles = ref([])
+const role = ref('')
+const permissions = ref([])
+const selected = ref([])
+const loading = ref(false)
+
+onMounted(async () => {
+  try {
+    const { data } = await http.get('/app/teams')
+    const team = (data?.data ?? [])[0]
+    if (!team) return
+    const res = await http.get(`/app/teams/${team.uuid}/permissions/pre-requisite`)
+    roles.value = (res.data.roles || []).map((r) => ({ value: String(r.id ?? r.uuid), label: r.name }))
+  } catch {}
 })
 
-const headers = [
-  { name: 'name', label: 'Name' },
-  { name: 'createdAt', label: 'Created' },
-  { name: 'action', label: 'Actions' },
-]
+async function loadPermissions() {
+  if (!role.value) return
+  loading.value = true
+  try {
+    const { data } = await http.get('/app/teams/1/permissions/pre-requisite')
+    permissions.value = Object.entries(data.permissions || {}).map(([group, list]) => ({
+      group,
+      items: (list || []).map((p) => ({ name: p.name || p, label: p.label || humanize(p.name || p) })),
+    }))
+    selected.value = data.role_permissions?.[role.value] || []
+  } catch {}
+  loading.value = false
+}
 
-const navs = [
-  { label: 'Team', path: 'Team' },
-  { label: 'Config', path: 'Index' },
-]
+function humanize(s) {
+  return String(s).replace(/_/g, ' ')
+}
 
-const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
-const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
+async function save() {
+  try {
+    await http.post('/app/teams/1/permissions/role/assign', { role: role.value, permissions: selected.value })
+    Swal.fire({ icon: 'success', title: 'Saved', text: 'Permissions updated.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
+  } catch {}
+}
 </script>
+
+<template>
+  <div class="space-y-5">
+    <PageHeader title="Role Permissions" :navs="[{ label: 'Team', path: '/team' }, { label: 'Permissions' }]" />
+    <Card>
+      <CardHeader>
+        <CardTitle>Assign permissions to role</CardTitle>
+        <CardDescription>Select a role and toggle its permissions</CardDescription>
+      </CardHeader>
+      <CardContent class="space-y-5">
+        <div class="flex max-w-md items-end gap-3">
+          <FormSelect v-model="role" :options="roles" label="Role" @update:model-value="loadPermissions" />
+          <Button :disabled="!role" @click="save">Save</Button>
+        </div>
+        <div v-if="loading" class="text-sm text-muted-foreground">Loading permissions…</div>
+        <div v-else-if="permissions.length" class="grid gap-6 md:grid-cols-2">
+          <div v-for="g in permissions" :key="g.group" class="space-y-2">
+            <div class="text-sm font-semibold capitalize">{{ g.group.replace(/_/g, ' ') }}</div>
+            <div class="grid grid-cols-2 gap-2">
+              <label v-for="p in g.items" :key="p.name" class="flex items-center gap-2 text-sm">
+                <Checkbox
+                  :model-value="selected.includes(p.name)"
+                  @update:model-value="(v) => v ? selected.push(p.name) : selected.splice(selected.indexOf(p.name), 1)"
+                />
+                {{ p.label }}
+              </label>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+</template>

@@ -1,16 +1,13 @@
+<script setup>
+defineProps({
+  balance: { type: [Number, String], default: 0 },
+  currency: { type: String, default: '' },
+})
+</script>
+
 <template>
-  <div>
-    <slot />
+  <div class="rounded-lg border p-4">
+    <div class="text-xs text-muted-foreground">Ledger balance</div>
+    <div class="text-2xl font-bold">{{ currency }} {{ balance }}</div>
   </div>
 </template>
-
-<script>
-/**
- * LedgerBalance (views/Components) — reconstructed scaffold. Globally registered in the original bundle.
- * The compiled bundle does not preserve readable templates, so this component
- * exposes a slot passthrough; extend it to match your desired behavior.
- */
-export default {
-  name: 'LedgerBalance',
-};
-</script>

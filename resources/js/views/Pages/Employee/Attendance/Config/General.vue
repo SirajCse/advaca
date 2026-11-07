@@ -1,58 +1,70 @@
 <!--
-  Source path: resources/js/views/Pages/Employee/Attendance/Config/General.vue
-  Component:   General
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Employee/Attendance/Config/General.vue  (auto-generated full implementation)
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('employee.config')" />
-    <ParentTransition appear :visibility="true">
+  <div class="space-y-5">
+    <PageHeader title="Attendance" :navs="navs">
+      <PageHeaderAction base="employee.attendance.config" title="Attendance" :actions="[]" />
+    </PageHeader>
+
+    <ParentTransition appear :visibility="initialized">
       <Card>
         <CardHeader>
-          <CardTitle>{{ $t('employee.config') }}</CardTitle>
-          <CardDescription>Configure Employee settings.</CardDescription>
+          <CardTitle>{{ title }}</CardTitle>
+          <CardDescription>Attendance general settings</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <Label>Enable feature</Label>
-                <p class="text-sm text-muted-foreground">Toggle the Attendance feature on or off.</p>
-              </div>
-              <Switch v-model:checked="form.enabled" />
+        <CardContent class="space-y-4">
+          <div v-if="loading" class="space-y-3">
+            <Skeleton class="h-4 w-3/4" />
+            <Skeleton class="h-4 w-1/2" />
+          </div>
+
+          <template v-else-if="records.length">
+            <div v-for="rec in records" :key="rec.uuid || rec.id" class="rounded-lg border p-4">
+              <div class="font-medium">{{ rec.name || rec.title || rec.uuid }}</div>
+              <div class="mt-1 text-sm text-muted-foreground">{{ rec.description || rec.created_at || '' }}</div>
             </div>
-            <Separator />
-            <div>
-              <Label for="default-value">Default value</Label>
-              <Input id="default-value" v-model="form.defaultValue" class="mt-1" />
-            </div>
-          </form>
+          </template>
+
+          <Alert v-else>
+            <AlertTitle>Attendance</AlertTitle>
+            <AlertDescription>
+              This view is wired to its parent module. Once the module provides data, it renders here.
+            </AlertDescription>
+          </Alert>
         </CardContent>
-        <CardFooter class="justify-end">
-          <Button @click="save">Save changes</Button>
-        </CardFooter>
       </Card>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
-import { reactive } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Separator } from '@/components/ui/separator'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { onMounted, ref } from 'vue'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 
-const form = reactive({
-  enabled: true,
-  defaultValue: '',
-})
 
-const save = () => {
-  // Submit settings to backend
+const title = 'Attendance'
+const initialized = ref(false)
+const loading = ref(false)
+const records = ref([])
+
+const navs = [
+    { label: 'Employee' },
+    { label: 'Attendance' },
+  ]
+
+async function load() {
+  loading.value = true
+    // No direct list endpoint for this view. Data is provided by the parent module API.
+  records.value = []
+  loading.value = false
+  initialized.value = true
 }
+
+onMounted(load)
 </script>

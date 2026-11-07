@@ -1,16 +1,4 @@
-<template>
-  <div>
-    <slot />
-  </div>
-</template>
-
-<script>
-/**
- * ExclamationCircleIcon (views/Components) — reconstructed scaffold. Globally registered in the original bundle.
- * The compiled bundle does not preserve readable templates, so this component
- * exposes a slot passthrough; extend it to match your desired behavior.
- */
-export default {
-  name: 'ExclamationCircleIcon',
-};
+<script setup>
+import { AlertCircle } from 'lucide-vue-next'
 </script>
+<template><AlertCircle class="h-4 w-4" /></template>

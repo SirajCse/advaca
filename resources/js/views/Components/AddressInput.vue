@@ -1,31 +1,30 @@
+<script setup>
+import { computed } from 'vue'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+
+const props = defineProps({
+  modelValue: { type: Object, default: () => ({}) },
+  label: { type: String, default: 'Address' },
+})
+const emit = defineEmits(['update:modelValue'])
+const address = computed(() => props.modelValue || {})
+
+function updateField(key, value) {
+  emit('update:modelValue', { ...address.value, [key]: value })
+}
+</script>
+
 <template>
-  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-    <base-input v-model="local.address_line1" :label="$trans('global.address_line1') || 'Address line 1'" class="sm:col-span-2" />
-    <base-input v-model="local.address_line2" :label="$trans('global.address_line2') || 'Address line 2'" class="sm:col-span-2" />
-    <base-input v-model="local.city" :label="$trans('global.city') || 'City'" />
-    <base-input v-model="local.state" :label="$trans('global.state') || 'State'" />
-    <base-input v-model="local.zipcode" :label="$trans('global.zipcode') || 'Zip code'" />
-    <base-input v-model="local.country" :label="$trans('global.country') || 'Country'" />
+  <div class="space-y-3">
+    <Label>{{ label }}</Label>
+    <div class="grid gap-3 md:grid-cols-2">
+      <Input :model-value="address.address_line1" placeholder="Address line 1" @update:model-value="updateField('address_line1', $event)" />
+      <Input :model-value="address.address_line2" placeholder="Address line 2" @update:model-value="updateField('address_line2', $event)" />
+      <Input :model-value="address.city" placeholder="City" @update:model-value="updateField('city', $event)" />
+      <Input :model-value="address.state" placeholder="State" @update:model-value="updateField('state', $event)" />
+      <Input :model-value="address.zipcode" placeholder="Zipcode" @update:model-value="updateField('zipcode', $event)" />
+      <Input :model-value="address.country" placeholder="Country" @update:model-value="updateField('country', $event)" />
+    </div>
   </div>
 </template>
-
-<script>
-export default {
-  name: 'AddressInput',
-  props: {
-    modelValue: { type: Object, default: () => ({}) },
-    errors: { type: Object, default: () => ({}) },
-  },
-  emits: ['update:modelValue'],
-  computed: {
-    local: {
-      get() {
-        return { address_line1: '', address_line2: '', city: '', state: '', zipcode: '', country: '', ...this.modelValue };
-      },
-      set(value) {
-        this.$emit('update:modelValue', value);
-      },
-    },
-  },
-};
-</script>

@@ -1,61 +1,127 @@
 <!--
-  Source path: resources/js/views/Pages/Reception/GatePass/Show.vue
-  Component:   Show
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Reception/GatePass/Show.vue  (auto-generated full implementation)
+  API:   receptionGatePasses @ app/reception/gate-passes
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('reception.gatepass')" :navs="navs" />
-    <ParentTransition appear :visibility="true">
-      <Card>
-        <CardHeader>
-          <CardTitle>{{ item.name || item.title || $t('reception.gatepass') }}</CardTitle>
-          <CardDescription>UUID: {{ item.uuid || '-' }}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div class="grid grid-cols-2 gap-4">
+  <div class="space-y-5">
+    <PageHeader title="Gate Pass" :navs="navs">
+      <PageHeaderAction base="reception.gate-pass" title="Gate Pass" :actions="['list', 'edit', 'print']" :edit-uuid="uuid" />
+    </PageHeader>
+
+    <ParentTransition appear :visibility="initialized">
+      <div v-if="record" class="space-y-5">
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0">
             <div>
-              <p class="text-sm font-medium text-muted-foreground">Name</p>
-              <p>{{ item.name || '-' }}</p>
+              <CardTitle class="text-lg">{{ record.name || record.title || record.name || 'Detail' }}</CardTitle>
+              <CardDescription>Gate Pass details</CardDescription>
             </div>
-            <div>
-              <p class="text-sm font-medium text-muted-foreground">Code</p>
-              <p>{{ item.code || '-' }}</p>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-muted-foreground">Created</p>
-              <p>{{ item.createdAt || item.created_at || '-' }}</p>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-muted-foreground">Status</p>
-              <Badge :variant="item.status ? 'default' : 'secondary'">{{ item.status ? 'Active' : 'Inactive' }}</Badge>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button variant="outline" @click="back">Back</Button>
-        </CardFooter>
+            <Button variant="destructive" size="sm" @click="remove">
+              <Trash2 class="h-4 w-4" />
+              Delete
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <dl class="grid gap-x-8 gap-y-4 md:grid-cols-2">
+              <div v-for="field in displayFields" :key="field.name" class="space-y-1">
+                <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{{ field.label }}</dt>
+                <dd class="text-sm">
+                  <Badge v-if="field.name === 'status'" :variant="String(valueOf(field)).includes('active') ? 'success' : 'secondary'">
+                    {{ valueOf(field) }}
+                  </Badge>
+                  <template v-else>{{ valueOf(field) }}</template>
+                </dd>
+              </div>
+            </dl>
+          </CardContent>
+        </Card>
+
+        <slot name="extra" :record="record" />
+      </div>
+      <Card v-else-if="initialized">
+        <CardContent class="py-10 text-center text-muted-foreground">Record not found.</CardContent>
       </Card>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Trash2 } from 'lucide-vue-next'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-import { router } from '@inertiajs/vue3'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
+import { displayValue, fmtDate, fmtDateTime } from '@/lib/helpers'
+import { receptionGatePasses } from '@/api/reception'
 
-const props = defineProps({
-  item: { type: Object, default: () => ({}) },
-})
+const route = useRoute()
+const router = useRouter()
+
+const title = 'Gate Pass'
+const uuid = computed(() => route.params.uuid)
+const initialized = ref(false)
+const record = ref(null)
 
 const navs = [
-  { label: 'Reception', path: 'Reception' },
-  { label: 'Gate Pass', path: 'Show' },
-]
+    { label: 'Reception' },
+    { label: 'Gate Pass' },
+  ]
 
-const back = () => router.back()
+const displayFields = [
+    { name: 'uuid', label: 'Uuid', type: 'text' },
+    { name: 'code_number', label: 'Code number', type: 'text' },
+    { name: 'requester_type', label: 'Requester type', type: 'text' },
+    { name: 'audiences', label: 'Audiences', type: 'text' },
+    { name: 'start_at', label: 'Start at', type: 'date' },
+    { name: 'end_at', label: 'End at', type: 'date' },
+    { name: 'left_at', label: 'Left at', type: 'date' },
+    { name: 'returned_at', label: 'Returned at', type: 'date' },
+    { name: 'purpose', label: 'Purpose', type: 'text' },
+    { name: 'reason', label: 'Reason', type: 'text' },
+    { name: 'remarks', label: 'Remarks', type: 'text' },
+    { name: 'image', label: 'Image', type: 'text' },
+    { name: 'images', label: 'Images', type: 'text' },
+    { name: 'media_token', label: 'Media token', type: 'text' },
+  ]
+
+function valueOf(field) {
+  const v = record.value?.[field.name]
+  if (field.type === 'date') return fmtDate(v)
+  if (field.type === 'datetime') return fmtDateTime(v)
+  return displayValue(v)
+}
+
+async function load() {
+  try {
+    const { data } = await receptionGatePasses.show(uuid.value)
+    record.value = data?.gatepass ?? data
+  } catch {
+    record.value = null
+  }
+  initialized.value = true
+}
+
+async function remove() {
+  const result = await Swal.fire({
+    title: 'Delete Gate Pass?',
+    text: 'This action cannot be undone.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete',
+    confirmButtonColor: '#ef4444',
+  })
+  if (!result.isConfirmed) return
+  try {
+    await receptionGatePasses.destroy(uuid.value)
+    Swal.fire({ icon: 'success', title: 'Deleted', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
+    router.push({ name: 'reception.gate-pass.index' })
+  } catch {}
+}
+
+onMounted(load)
 </script>

@@ -1,59 +1,35 @@
-<!--
-  Source path: resources/js/views/Pages/Support/Index.vue
-  Component:   Index
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
--->
-<template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('support.index.vue.index.vue')" :navs="navs">
-      <PageHeaderAction :name="'Index'" :title="$t('support.index.vue.index.vue')" :actions="['list']" />
-    </PageHeader>
-    <ParentTransition appear :visibility="true">
-      <DataTable :title="$t('support.index.vue.index.vue')" :headers="headers" :meta="meta" module="support.index.vue">
-        <TableRow v-for="item in items" :key="item.id || item.uuid">
-          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
-          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
-          <TableCell class="text-right">
-            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
-            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
-          </TableCell>
-        </TableRow>
-        <TableRow v-if="!items.length">
-          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
-            No records found.
-          </TableCell>
-        </TableRow>
-      </DataTable>
-    </ParentTransition>
-  </div>
-</template>
-
 <script setup>
 import { ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import http from '@/lib/http'
 import { Button } from '@/components/ui/button'
-import { TableBody, TableRow, TableCell } from '@/components/ui/table'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-import DataTable from '@/views/Components/DataTable.vue'
 
-const props = defineProps({
-  items: { type: Array, default: () => [] },
-  meta: { type: Object, default: () => ({}) },
-})
+const token = ref('')
+const loading = ref(false)
 
-const headers = [
-  { name: 'name', label: 'Name' },
-  { name: 'createdAt', label: 'Created' },
-  { name: 'action', label: 'Actions' },
-]
-
-const navs = [
-  { label: 'Support', path: 'Support' },
-  { label: 'Index.vue', path: 'Index' },
-]
-
-const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
-const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
+async function generate() {
+  loading.value = true
+  try {
+    const { data } = await http.post('/app/support/token')
+    token.value = data?.token || data?.support_token || ''
+  } catch {}
+  loading.value = false
+}
 </script>
+
+<template>
+  <div class="space-y-5">
+    <PageHeader title="Support" :navs="[{ label: 'General' }, { label: 'Support' }]" />
+    <Card>
+      <CardHeader>
+        <CardTitle>Support token</CardTitle>
+        <CardDescription>Generate a temporary token so the support team can diagnose your installation.</CardDescription>
+      </CardHeader>
+      <CardContent class="space-y-4">
+        <Button :disabled="loading" @click="generate">{{ loading ? 'Generating…' : 'Generate token' }}</Button>
+        <div v-if="token" class="break-all rounded-md border bg-muted/40 p-3 font-mono text-sm">{{ token }}</div>
+      </CardContent>
+    </Card>
+  </div>
+</template>

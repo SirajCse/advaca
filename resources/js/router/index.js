@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import routes from './routes'
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/app'),
   routes,
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) return savedPosition
@@ -11,18 +12,22 @@ const router = createRouter({
   },
 })
 
-router.beforeEach((to, from, next) => {
-  const isLoggedIn = !!(window.Laravel && window.Laravel.user)
-  if (to.meta.requiresAuth && !isLoggedIn && to.name !== 'login') {
-    next({ name: 'login' })
-  } else {
-    next()
+router.beforeEach(async (to) => {
+  const auth = useAuthStore()
+  if (!auth.ready) await auth.init()
+
+  if (to.meta.guest && auth.isLoggedIn) {
+    return { path: '/dashboard' }
   }
+  if (!to.meta.guest && !auth.isLoggedIn) {
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
+  return true
 })
 
 router.afterEach((to) => {
-  const title = to.meta.title || to.name
-  document.title = title ? title + ' - Advaca' : 'Advaca'
+  const title = to.meta.title || (typeof to.name === 'string' ? to.name.replace(/\./g, ' ') : '')
+  document.title = title ? title + ' - AdvAca' : 'AdvAca'
 })
 
 export default router

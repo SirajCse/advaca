@@ -1,58 +1,74 @@
 <!--
-  Source path: resources/js/views/Pages/Activity/Trip/General.vue
-  Component:   General
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Activity/Trip/General.vue  (auto-generated full implementation)
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('activity.config')" />
-    <ParentTransition appear :visibility="true">
+  <div class="space-y-5">
+    <PageHeader title="Trip" :navs="navs">
+      <PageHeaderAction base="activity.trip" title="Trip" :actions="[]" />
+    </PageHeader>
+
+    <ParentTransition appear :visibility="initialized">
       <Card>
         <CardHeader>
-          <CardTitle>{{ $t('activity.config') }}</CardTitle>
-          <CardDescription>Configure Activity settings.</CardDescription>
+          <CardTitle>{{ title }}</CardTitle>
+          <CardDescription>Trip general settings</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <Label>Enable feature</Label>
-                <p class="text-sm text-muted-foreground">Toggle the Trip feature on or off.</p>
-              </div>
-              <Switch v-model:checked="form.enabled" />
+        <CardContent class="space-y-4">
+          <div v-if="loading" class="space-y-3">
+            <Skeleton class="h-4 w-3/4" />
+            <Skeleton class="h-4 w-1/2" />
+          </div>
+
+          <template v-else-if="records.length">
+            <div v-for="rec in records" :key="rec.uuid || rec.id" class="rounded-lg border p-4">
+              <div class="font-medium">{{ rec.name || rec.title || rec.uuid }}</div>
+              <div class="mt-1 text-sm text-muted-foreground">{{ rec.description || rec.created_at || '' }}</div>
             </div>
-            <Separator />
-            <div>
-              <Label for="default-value">Default value</Label>
-              <Input id="default-value" v-model="form.defaultValue" class="mt-1" />
-            </div>
-          </form>
+          </template>
+
+          <Alert v-else>
+            <AlertTitle>Trip</AlertTitle>
+            <AlertDescription>
+              No records yet. New entries will appear here.
+            </AlertDescription>
+          </Alert>
         </CardContent>
-        <CardFooter class="justify-end">
-          <Button @click="save">Save changes</Button>
-        </CardFooter>
       </Card>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
-import { reactive } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Separator } from '@/components/ui/separator'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { onMounted, ref } from 'vue'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
+import { activityTrips } from '@/api/activity'
 
-const form = reactive({
-  enabled: true,
-  defaultValue: '',
-})
+const title = 'Trip'
+const initialized = ref(false)
+const loading = ref(false)
+const records = ref([])
 
-const save = () => {
-  // Submit settings to backend
+const navs = [
+    { label: 'Activity' },
+    { label: 'Trip' },
+  ]
+
+async function load() {
+  loading.value = true
+    try {
+    const { data } = await activityTrips.index({ per_page: 50 })
+    records.value = data?.data ?? []
+  } catch {
+    records.value = []
+  }
+  loading.value = false
+  initialized.value = true
 }
+
+onMounted(load)
 </script>

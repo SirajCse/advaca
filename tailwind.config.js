@@ -4,9 +4,7 @@ export default {
   content: [
     './storage/framework/views/*.php',
     './resources/views/**/*.blade.php',
-    './resources/js/**/*.vue',
-    './resources/js/**/*.js',
-    './resources/js/**/*.ts',
+    './resources/js/**/*.{vue,js,ts}',
   ],
   theme: {
     container: {
@@ -16,7 +14,6 @@ export default {
     },
     extend: {
       colors: {
-        // shadcn-vue CSS variables (mapped in resources/css/app.css)
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
@@ -50,7 +47,6 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        // advaca legacy tokens (preserved for backwards compat with recovered chunks)
         'dark-body': 'hsl(var(--background))',
         'dark-header': 'hsl(222.2 47.4% 11.2%)',
         warning: '#f59e0b',
@@ -66,14 +62,8 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       keyframes: {
-        'accordion-down': {
-          from: { height: '0' },
-          to: { height: 'var(--radix-accordion-content-height)' },
-        },
-        'accordion-up': {
-          from: { height: 'var(--radix-accordion-content-height)' },
-          to: { height: '0' },
-        },
+        'accordion-down': { from: { height: '0' }, to: { height: 'var(--radix-accordion-content-height)' } },
+        'accordion-up': { from: { height: 'var(--radix-accordion-content-height)' }, to: { height: '0' } },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',

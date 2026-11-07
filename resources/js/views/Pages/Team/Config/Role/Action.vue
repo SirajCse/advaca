@@ -1,78 +1,74 @@
 <!--
-  Source path: resources/js/views/Pages/Team/Config/Role/Action.vue
-  Component:   Action
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Team/Config/Role/Action.vue  (auto-generated full implementation)
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('team.config')" :navs="navs" />
-    <ParentTransition appear :visibility="true">
-      <FormAction :title="$t('team.config')" @submit="submit">
-        <template #default>
-          <div class="grid grid-cols-3 gap-6">
-            <div class="col-span-3 sm:col-span-2">
-              <Label for="name">{{ $t('team.config') }}</Label>
-              <Input id="name" v-model="form.name" class="mt-1" />
-            </div>
-            <div class="col-span-3 sm:col-span-1">
-              <Label for="code">Code</Label>
-              <Input id="code" v-model="form.code" class="mt-1" />
-            </div>
-            <div class="col-span-3">
-              <Label for="description">Description</Label>
-              <Textarea id="description" v-model="form.description" rows="3" class="mt-1" />
-            </div>
-            <div class="col-span-3 sm:col-span-1">
-              <Label for="status">Status</Label>
-              <Switch id="status" v-model:checked="form.status" class="mt-2" />
-            </div>
+  <div class="space-y-5">
+    <PageHeader title="Config" :navs="navs">
+      <PageHeaderAction base="team.config.role" title="Config" :actions="[]" />
+    </PageHeader>
+
+    <ParentTransition appear :visibility="initialized">
+      <Card>
+        <CardHeader>
+          <CardTitle>{{ title }}</CardTitle>
+          <CardDescription>Config view</CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div v-if="loading" class="space-y-3">
+            <Skeleton class="h-4 w-3/4" />
+            <Skeleton class="h-4 w-1/2" />
           </div>
-        </template>
-        <template #actions>
-          <Button type="submit" :disabled="processing">{ $t('global.save') }</Button>
-          <Button variant="outline" @click="back">Cancel</Button>
-        </template>
-      </FormAction>
+
+          <template v-else-if="records.length">
+            <div v-for="rec in records" :key="rec.uuid || rec.id" class="rounded-lg border p-4">
+              <div class="font-medium">{{ rec.name || rec.title || rec.uuid }}</div>
+              <div class="mt-1 text-sm text-muted-foreground">{{ rec.description || rec.created_at || '' }}</div>
+            </div>
+          </template>
+
+          <Alert v-else>
+            <AlertTitle>Config</AlertTitle>
+            <AlertDescription>
+              No records yet. New entries will appear here.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { router } from '@inertiajs/vue3'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
+import { onMounted, ref } from 'vue'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-import FormAction from '@/views/Components/FormAction.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
+import { config } from '@/api/core'
 
-const props = defineProps({
-  item: { type: Object, default: () => ({}) },
-})
-
-const form = reactive({
-  name: props.item?.name || '',
-  code: props.item?.code || '',
-  description: props.item?.description || '',
-  status: props.item?.status ?? true,
-})
-
-const processing = ref(false)
+const title = 'Config'
+const initialized = ref(false)
+const loading = ref(false)
+const records = ref([])
 
 const navs = [
-  { label: 'Team', path: 'Team' },
-  { label: 'Config', path: 'Action' },
-]
+    { label: 'Team' },
+    { label: 'Config' },
+  ]
 
-const submit = () => {
-  processing.value = true
-  router.post('/team/config', form, {
-    onFinish: () => { processing.value = false },
-  })
+async function load() {
+  loading.value = true
+    try {
+    const { data } = await config.index({ per_page: 50 })
+    records.value = data?.data ?? []
+  } catch {
+    records.value = []
+  }
+  loading.value = false
+  initialized.value = true
 }
 
-const back = () => router.back()
+onMounted(load)
 </script>

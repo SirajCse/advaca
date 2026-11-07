@@ -1,16 +1,4 @@
-<template>
-  <div>
-    <slot />
-  </div>
-</template>
-
-<script>
-/**
- * InformationCircleIcon (views/Components) — reconstructed scaffold. Globally registered in the original bundle.
- * The compiled bundle does not preserve readable templates, so this component
- * exposes a slot passthrough; extend it to match your desired behavior.
- */
-export default {
-  name: 'InformationCircleIcon',
-};
+<script setup>
+import { Info } from 'lucide-vue-next'
 </script>
+<template><Info class="h-4 w-4" /></template>

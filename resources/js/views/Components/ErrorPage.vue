@@ -1,19 +1,25 @@
+<script setup>
+import { useRouter } from 'vue-router'
+import { Button } from '@/components/ui/button'
+
+const props = defineProps({
+  code: { type: [String, Number], default: 404 },
+  message: { type: String, default: '' },
+})
+
+const router = useRouter()
+const messages = {
+  401: 'You are not authenticated. Please login to continue.',
+  403: 'You do not have permission to access this page.',
+  404: 'The page you are looking for could not be found.',
+  500: 'Something went wrong on the server.',
+}
+</script>
+
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6 text-center">
-    <h1 class="text-6xl font-extrabold text-primary">{{ code }}</h1>
-    <p class="mt-3 text-lg text-gray-600">{{ message }}</p>
-    <router-link to="/" class="mt-6 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white">
-      {{ $trans('global.back_to_home') || 'Back to home' }}
-    </router-link>
+  <div class="mx-auto max-w-md text-center">
+    <div class="mb-4 text-6xl font-bold text-primary">{{ code }}</div>
+    <p class="mb-6 text-muted-foreground">{{ message || messages[code] || 'Unexpected error.' }}</p>
+    <Button @click="router.push('/dashboard')">Go to Dashboard</Button>
   </div>
 </template>
-
-<script>
-export default {
-  name: 'ErrorPage',
-  props: {
-    code: { type: [String, Number], default: 404 },
-    message: { type: String, default: '' },
-  },
-};
-</script>

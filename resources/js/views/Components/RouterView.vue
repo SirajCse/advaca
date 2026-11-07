@@ -1,16 +1,6 @@
-<template>
-  <div>
-    <slot />
-  </div>
-</template>
-
-<script>
-/**
- * RouterView (views/Components) — reconstructed scaffold. Globally registered in the original bundle.
- * The compiled bundle does not preserve readable templates, so this component
- * exposes a slot passthrough; extend it to match your desired behavior.
- */
-export default {
-  name: 'RouterView',
-};
+<script setup>
+import { RouterView as _RouterView } from 'vue-router'
 </script>
+<template>
+  <RouterView><slot /></RouterView>
+</template>

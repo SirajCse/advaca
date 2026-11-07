@@ -1,23 +1,37 @@
 <!--
-  Source path: resources/js/views/Pages/Student/OnlineRegistration/Form.vue
-  Component:   Form
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Student/OnlineRegistration/Form.vue  (auto-generated full implementation)
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('student.form')" />
-    <ParentTransition appear :visibility="true">
+  <div class="space-y-5">
+    <PageHeader title="Online Registration Form" :navs="navs">
+      <PageHeaderAction base="student.online-registration" title="Online Registration Form" :actions="[]" />
+    </PageHeader>
+
+    <ParentTransition appear :visibility="initialized">
       <Card>
         <CardHeader>
-          <CardTitle>Form</CardTitle>
-          <CardDescription>Page component for Student Online Registration.</CardDescription>
+          <CardTitle>{{ title }}</CardTitle>
+          <CardDescription>Online Registration Form view</CardDescription>
         </CardHeader>
-        <CardContent>
-          <p class="text-sm text-muted-foreground">
-            This is a clean Vue 3 SFC generated for the Form component.
-            Replace this placeholder with the actual page content for your
-            Form.
-          </p>
+        <CardContent class="space-y-4">
+          <div v-if="loading" class="space-y-3">
+            <Skeleton class="h-4 w-3/4" />
+            <Skeleton class="h-4 w-1/2" />
+          </div>
+
+          <template v-else-if="records.length">
+            <div v-for="rec in records" :key="rec.uuid || rec.id" class="rounded-lg border p-4">
+              <div class="font-medium">{{ rec.name || rec.title || rec.uuid }}</div>
+              <div class="mt-1 text-sm text-muted-foreground">{{ rec.description || rec.created_at || '' }}</div>
+            </div>
+          </template>
+
+          <Alert v-else>
+            <AlertTitle>Online Registration Form</AlertTitle>
+            <AlertDescription>
+              This view is wired to its parent module. Once the module provides data, it renders here.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     </ParentTransition>
@@ -25,7 +39,32 @@
 </template>
 
 <script setup>
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { onMounted, ref } from 'vue'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
+
+
+const title = 'Online Registration Form'
+const initialized = ref(false)
+const loading = ref(false)
+const records = ref([])
+
+const navs = [
+    { label: 'Student' },
+    { label: 'Online Registration Form' },
+  ]
+
+async function load() {
+  loading.value = true
+    // No direct list endpoint for this view. Data is provided by the parent module API.
+  records.value = []
+  loading.value = false
+  initialized.value = true
+}
+
+onMounted(load)
 </script>

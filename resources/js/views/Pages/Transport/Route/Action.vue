@@ -1,78 +1,134 @@
 <!--
-  Source path: resources/js/views/Pages/Transport/Route/Action.vue
-  Component:   Action
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Transport/Route/Action.vue  (auto-generated full implementation - create & edit)
+  API:   transportRoutes @ app/transport/routes
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('transport.route')" :navs="navs" />
-    <ParentTransition appear :visibility="true">
-      <FormAction :title="$t('transport.route')" @submit="submit">
-        <template #default>
-          <div class="grid grid-cols-3 gap-6">
-            <div class="col-span-3 sm:col-span-2">
-              <Label for="name">{{ $t('transport.route') }}</Label>
-              <Input id="name" v-model="form.name" class="mt-1" />
-            </div>
-            <div class="col-span-3 sm:col-span-1">
-              <Label for="code">Code</Label>
-              <Input id="code" v-model="form.code" class="mt-1" />
-            </div>
-            <div class="col-span-3">
-              <Label for="description">Description</Label>
-              <Textarea id="description" v-model="form.description" rows="3" class="mt-1" />
-            </div>
-            <div class="col-span-3 sm:col-span-1">
-              <Label for="status">Status</Label>
-              <Switch id="status" v-model:checked="form.status" class="mt-2" />
-            </div>
-          </div>
-        </template>
-        <template #actions>
-          <Button type="submit" :disabled="processing">{ $t('global.save') }</Button>
-          <Button variant="outline" @click="back">Cancel</Button>
-        </template>
+  <div class="space-y-5">
+    <PageHeader :title="isCreate ? 'New Route' : 'Edit Route'" :navs="navs">
+      <PageHeaderAction base="transport.route" title="Route" :actions="['list']" />
+    </PageHeader>
+
+    <ParentTransition appear :visibility="initialized">
+      <FormAction
+        :title="isCreate ? 'New Route' : 'Edit Route'"
+        :processing="processing"
+        :is-create="isCreate"
+        :back-to="{ name: 'transport.route.index' }"
+        @submit="submit"
+      >
+                <div class="space-y-1.5">
+          <Label for="name">Name<span v-if="true" class="text-destructive"> *</span></Label>
+          <Input id="name" v-model="form.name" type="text" :class="errors.name ? 'border-destructive' : ''" />
+          <p v-if="errors.name" class="text-xs text-destructive">{{ String(errors.name[0] || errors.name) }}</p>
+        </div>
+
+
+        <p v-if="submitError" class="text-sm text-destructive">{{ submitError }}</p>
       </FormAction>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { router } from '@inertiajs/vue3'
-import { Button } from '@/components/ui/button'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 import FormAction from '@/views/Components/FormAction.vue'
+import FormSelect from '@/views/Components/FormSelect.vue'
+import FormRelationSelect from '@/views/Components/FormRelationSelect.vue'
+import FormArrayInput from '@/views/Components/FormArrayInput.vue'
+import { pickPreReq } from '@/lib/helpers'
+import { transportRoutes } from '@/api/transport'
 
-const props = defineProps({
-  item: { type: Object, default: () => ({}) },
-})
+const route = useRoute()
+const router = useRouter()
 
-const form = reactive({
-  name: props.item?.name || '',
-  code: props.item?.code || '',
-  description: props.item?.description || '',
-  status: props.item?.status ?? true,
-})
-
+const title = 'Route'
+const isCreate = computed(() => !route.params.uuid)
+const initialized = ref(false)
 const processing = ref(false)
+const submitError = ref('')
+const errors = ref({})
+const preReq = ref(null)
 
 const navs = [
-  { label: 'Transport', path: 'Transport' },
-  { label: 'Route', path: 'Action' },
-]
+    { label: 'Transport' },
+    { label: 'Route' },
+  ]
 
-const submit = () => {
-  processing.value = true
-  router.post('/transport/route', form, {
-    onFinish: () => { processing.value = false },
+const form = reactive({
+    name: "",
   })
+
+const relationOptions = reactive({})
+
+async function loadPreRequisite() {
+  if (typeof transportRoutes.preRequisite !== 'function') return
+  try {
+    const { data } = await transportRoutes.preRequisite()
+    preReq.value = data
+        // no relation fields
+  } catch {}
 }
 
-const back = () => router.back()
+async function loadRecordAndPreReq(uuid) {
+  await Promise.all([loadRecord(uuid), loadPreRequisite()])
+}
+
+async function loadRecord(uuid) {
+  try {
+    const { data } = await transportRoutes.show(uuid)
+    const record = data?.route ?? data
+        Object.keys(form).forEach((k) => {
+      let v = record[k]
+      if (v && typeof v === 'object' && !Array.isArray(v)) v = v.uuid ?? v.id ?? v.name ?? ''
+      if (v === null || v === undefined) {
+        v = Array.isArray(form[k]) ? [] : (typeof form[k] === 'boolean' ? false : '')
+      }
+      form[k] = v
+    })
+  } catch {
+    // keep defaults
+  }
+}
+
+async function submit() {
+  processing.value = true
+  errors.value = {}
+  submitError.value = ''
+  try {
+    let message
+    if (isCreate.value) {
+      const res = await transportRoutes.store({ ...form })
+      message = res.data?.message || 'Route created successfully.'
+    } else {
+      const res = await transportRoutes.update(route.params.uuid, { ...form })
+      message = res.data?.message || 'Route updated successfully.'
+    }
+    Swal.fire({ icon: 'success', title: 'Success', text: message, toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
+    router.push({ name: 'transport.route.index' })
+  } catch (e) {
+    if (e.fieldErrors && Object.keys(e.fieldErrors).length) {
+      errors.value = e.fieldErrors
+    }
+    if (e.toastMessage) submitError.value = e.toastMessage
+  }
+  processing.value = false
+}
+
+onMounted(async () => {
+  if (!isCreate.value) {
+    await loadRecordAndPreReq(route.params.uuid)
+  } else {
+    await loadPreRequisite()
+  }
+  initialized.value = true
+})
 </script>

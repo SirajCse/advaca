@@ -1,59 +1,23 @@
-<!--
-  Source path: resources/js/views/Pages/Product/Index.vue
-  Component:   Index
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
--->
+<script setup>
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import { useConfigStore } from '@/stores/config'
+
+const config = useConfigStore()
+</script>
+
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('product.index.vue.index.vue')" :navs="navs">
-      <PageHeaderAction :name="'Index'" :title="$t('product.index.vue.index.vue')" :actions="['list']" />
-    </PageHeader>
-    <ParentTransition appear :visibility="true">
-      <DataTable :title="$t('product.index.vue.index.vue')" :headers="headers" :meta="meta" module="product.index.vue">
-        <TableRow v-for="item in items" :key="item.id || item.uuid">
-          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
-          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
-          <TableCell class="text-right">
-            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
-            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
-          </TableCell>
-        </TableRow>
-        <TableRow v-if="!items.length">
-          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
-            No records found.
-          </TableCell>
-        </TableRow>
-      </DataTable>
-    </ParentTransition>
+  <div class="space-y-5">
+    <PageHeader title="Product" :navs="[{ label: 'Product' }, { label: 'Overview' }]" />
+    <Card>
+      <CardHeader>
+        <CardTitle>{{ config.appName }}</CardTitle>
+        <CardDescription>School / college management platform</CardDescription>
+      </CardHeader>
+      <CardContent class="space-y-3 text-sm text-muted-foreground">
+        <p>This installation is powered by the AdvAca product family. Manage your license and version details below.</p>
+        <RouterLink to="/product/license" class="text-primary hover:underline">View license details</RouterLink>
+      </CardContent>
+    </Card>
   </div>
 </template>
-
-<script setup>
-import { ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
-import { Button } from '@/components/ui/button'
-import { TableBody, TableRow, TableCell } from '@/components/ui/table'
-import PageHeader from '@/views/Components/PageHeader.vue'
-import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-import DataTable from '@/views/Components/DataTable.vue'
-
-const props = defineProps({
-  items: { type: Array, default: () => [] },
-  meta: { type: Object, default: () => ({}) },
-})
-
-const headers = [
-  { name: 'name', label: 'Name' },
-  { name: 'createdAt', label: 'Created' },
-  { name: 'action', label: 'Actions' },
-]
-
-const navs = [
-  { label: 'Product', path: 'Product' },
-  { label: 'Index.vue', path: 'Index' },
-]
-
-const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
-const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
-</script>

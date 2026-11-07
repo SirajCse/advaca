@@ -1,78 +1,169 @@
 <!--
-  Source path: resources/js/views/Pages/Exam/Action.vue
-  Component:   Action
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Exam/Action.vue  (auto-generated full implementation - create & edit)
+  API:   exams @ app/exams
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('exam.action.vue')" :navs="navs" />
-    <ParentTransition appear :visibility="true">
-      <FormAction :title="$t('exam.action.vue')" @submit="submit">
-        <template #default>
-          <div class="grid grid-cols-3 gap-6">
-            <div class="col-span-3 sm:col-span-2">
-              <Label for="name">{{ $t('exam.action.vue') }}</Label>
-              <Input id="name" v-model="form.name" class="mt-1" />
-            </div>
-            <div class="col-span-3 sm:col-span-1">
-              <Label for="code">Code</Label>
-              <Input id="code" v-model="form.code" class="mt-1" />
-            </div>
-            <div class="col-span-3">
-              <Label for="description">Description</Label>
-              <Textarea id="description" v-model="form.description" rows="3" class="mt-1" />
-            </div>
-            <div class="col-span-3 sm:col-span-1">
-              <Label for="status">Status</Label>
-              <Switch id="status" v-model:checked="form.status" class="mt-2" />
-            </div>
-          </div>
-        </template>
-        <template #actions>
-          <Button type="submit" :disabled="processing">{ $t('global.save') }</Button>
-          <Button variant="outline" @click="back">Cancel</Button>
-        </template>
+  <div class="space-y-5">
+    <PageHeader :title="isCreate ? 'New Exam' : 'Edit Exam'" :navs="navs">
+      <PageHeaderAction base="exam" title="Exam" :actions="['list']" />
+    </PageHeader>
+
+    <ParentTransition appear :visibility="initialized">
+      <FormAction
+        :title="isCreate ? 'New Exam' : 'Edit Exam'"
+        :processing="processing"
+        :is-create="isCreate"
+        :back-to="{ name: 'exam.index' }"
+        @submit="submit"
+      >
+                <div class="space-y-1.5">
+          <Label for="name">Name<span v-if="true" class="text-destructive"> *</span></Label>
+          <Input id="name" v-model="form.name" type="text" :class="errors.name ? 'border-destructive' : ''" />
+          <p v-if="errors.name" class="text-xs text-destructive">{{ String(errors.name[0] || errors.name) }}</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <Label for="code">Code<span v-if="true" class="text-destructive"> *</span></Label>
+          <Input id="code" v-model="form.code" type="text" :class="errors.code ? 'border-destructive' : ''" />
+          <p v-if="errors.code" class="text-xs text-destructive">{{ String(errors.code[0] || errors.code) }}</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <Label for="display_name">Display name<span v-if="false" class="text-destructive"> *</span></Label>
+          <Input id="display_name" v-model="form.display_name" type="text" :class="errors.display_name ? 'border-destructive' : ''" />
+          <p v-if="errors.display_name" class="text-xs text-destructive">{{ String(errors.display_name[0] || errors.display_name) }}</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <Label for="term">Term<span v-if="false" class="text-destructive"> *</span></Label>
+          <Input id="term" v-model="form.term" type="text" :class="errors.term ? 'border-destructive' : ''" />
+          <p v-if="errors.term" class="text-xs text-destructive">{{ String(errors.term[0] || errors.term) }}</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <Label for="weightage">Weightage<span v-if="true" class="text-destructive"> *</span></Label>
+          <Input id="weightage" v-model="form.weightage" type="number" :class="errors.weightage ? 'border-destructive' : ''" />
+          <p v-if="errors.weightage" class="text-xs text-destructive">{{ String(errors.weightage[0] || errors.weightage) }}</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <Label for="description">Description<span v-if="false" class="text-destructive"> *</span></Label>
+          <Textarea id="description" v-model="form.description" :rows="4" />
+          <p v-if="errors.description" class="text-xs text-destructive">{{ String(errors.description[0] || errors.description) }}</p>
+        </div>
+
+
+        <p v-if="submitError" class="text-sm text-destructive">{{ submitError }}</p>
       </FormAction>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { router } from '@inertiajs/vue3'
-import { Button } from '@/components/ui/button'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 import FormAction from '@/views/Components/FormAction.vue'
+import FormSelect from '@/views/Components/FormSelect.vue'
+import FormRelationSelect from '@/views/Components/FormRelationSelect.vue'
+import FormArrayInput from '@/views/Components/FormArrayInput.vue'
+import { pickPreReq } from '@/lib/helpers'
+import { exams } from '@/api/exams'
 
-const props = defineProps({
-  item: { type: Object, default: () => ({}) },
-})
+const route = useRoute()
+const router = useRouter()
 
-const form = reactive({
-  name: props.item?.name || '',
-  code: props.item?.code || '',
-  description: props.item?.description || '',
-  status: props.item?.status ?? true,
-})
-
+const title = 'Exam'
+const isCreate = computed(() => !route.params.uuid)
+const initialized = ref(false)
 const processing = ref(false)
+const submitError = ref('')
+const errors = ref({})
+const preReq = ref(null)
 
 const navs = [
-  { label: 'Exam', path: 'Exam' },
-  { label: 'Action.vue', path: 'Action' },
-]
+    { label: 'Exam' },
+    { label: 'Exam' },
+  ]
 
-const submit = () => {
-  processing.value = true
-  router.post('/exam/action.vue', form, {
-    onFinish: () => { processing.value = false },
+const form = reactive({
+    name: "",
+    code: "",
+    display_name: "",
+    term: "",
+    weightage: "",
+    description: "",
   })
+
+const relationOptions = reactive({})
+
+async function loadPreRequisite() {
+  if (typeof exams.preRequisite !== 'function') return
+  try {
+    const { data } = await exams.preRequisite()
+    preReq.value = data
+        // no relation fields
+  } catch {}
 }
 
-const back = () => router.back()
+async function loadRecordAndPreReq(uuid) {
+  await Promise.all([loadRecord(uuid), loadPreRequisite()])
+}
+
+async function loadRecord(uuid) {
+  try {
+    const { data } = await exams.show(uuid)
+    const record = data?.exam ?? data
+        Object.keys(form).forEach((k) => {
+      let v = record[k]
+      if (v && typeof v === 'object' && !Array.isArray(v)) v = v.uuid ?? v.id ?? v.name ?? ''
+      if (v === null || v === undefined) {
+        v = Array.isArray(form[k]) ? [] : (typeof form[k] === 'boolean' ? false : '')
+      }
+      form[k] = v
+    })
+  } catch {
+    // keep defaults
+  }
+}
+
+async function submit() {
+  processing.value = true
+  errors.value = {}
+  submitError.value = ''
+  try {
+    let message
+    if (isCreate.value) {
+      const res = await exams.store({ ...form })
+      message = res.data?.message || 'Exam created successfully.'
+    } else {
+      const res = await exams.update(route.params.uuid, { ...form })
+      message = res.data?.message || 'Exam updated successfully.'
+    }
+    Swal.fire({ icon: 'success', title: 'Success', text: message, toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
+    router.push({ name: 'exam.index' })
+  } catch (e) {
+    if (e.fieldErrors && Object.keys(e.fieldErrors).length) {
+      errors.value = e.fieldErrors
+    }
+    if (e.toastMessage) submitError.value = e.toastMessage
+  }
+  processing.value = false
+}
+
+onMounted(async () => {
+  if (!isCreate.value) {
+    await loadRecordAndPreReq(route.params.uuid)
+  } else {
+    await loadPreRequisite()
+  }
+  initialized.value = true
+})
 </script>

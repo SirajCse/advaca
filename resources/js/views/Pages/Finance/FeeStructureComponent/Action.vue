@@ -1,78 +1,136 @@
 <!--
-  Source path: resources/js/views/Pages/Finance/FeeStructureComponent/Action.vue
-  Component:   Action
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
+  Page: Finance/FeeStructureComponent/Action.vue  (auto-generated full implementation - create & edit)
+  API:   financeFeeStructureComponents @ app/finance/fee-structure-components
 -->
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('finance.feestructurecomponent')" :navs="navs" />
-    <ParentTransition appear :visibility="true">
-      <FormAction :title="$t('finance.feestructurecomponent')" @submit="submit">
-        <template #default>
-          <div class="grid grid-cols-3 gap-6">
-            <div class="col-span-3 sm:col-span-2">
-              <Label for="name">{{ $t('finance.feestructurecomponent') }}</Label>
-              <Input id="name" v-model="form.name" class="mt-1" />
-            </div>
-            <div class="col-span-3 sm:col-span-1">
-              <Label for="code">Code</Label>
-              <Input id="code" v-model="form.code" class="mt-1" />
-            </div>
-            <div class="col-span-3">
-              <Label for="description">Description</Label>
-              <Textarea id="description" v-model="form.description" rows="3" class="mt-1" />
-            </div>
-            <div class="col-span-3 sm:col-span-1">
-              <Label for="status">Status</Label>
-              <Switch id="status" v-model:checked="form.status" class="mt-2" />
-            </div>
-          </div>
-        </template>
-        <template #actions>
-          <Button type="submit" :disabled="processing">{ $t('global.save') }</Button>
-          <Button variant="outline" @click="back">Cancel</Button>
-        </template>
+  <div class="space-y-5">
+    <PageHeader :title="isCreate ? 'New Fee Structure Component' : 'Edit Fee Structure Component'" :navs="navs">
+      <PageHeaderAction base="finance.fee-structure-component" title="Fee Structure Component" :actions="['list']" />
+    </PageHeader>
+
+    <ParentTransition appear :visibility="initialized">
+      <FormAction
+        :title="isCreate ? 'New Fee Structure Component' : 'Edit Fee Structure Component'"
+        :processing="processing"
+        :is-create="isCreate"
+        :back-to="{ name: 'finance.fee-structure-component.index' }"
+        @submit="submit"
+      >
+                <FormArrayInput
+          v-model="form.components"
+          label="Fee components"
+          :required="true"
+          placeholder="Add value"
+          :error="errors.components ? String(errors.components[0] || errors.components) : ''"
+        />
+
+
+        <p v-if="submitError" class="text-sm text-destructive">{{ submitError }}</p>
       </FormAction>
     </ParentTransition>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { router } from '@inertiajs/vue3'
-import { Button } from '@/components/ui/button'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
+import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 import FormAction from '@/views/Components/FormAction.vue'
+import FormSelect from '@/views/Components/FormSelect.vue'
+import FormRelationSelect from '@/views/Components/FormRelationSelect.vue'
+import FormArrayInput from '@/views/Components/FormArrayInput.vue'
+import { pickPreReq } from '@/lib/helpers'
+import { financeFeeStructureComponents } from '@/api/finance'
 
-const props = defineProps({
-  item: { type: Object, default: () => ({}) },
-})
+const route = useRoute()
+const router = useRouter()
 
-const form = reactive({
-  name: props.item?.name || '',
-  code: props.item?.code || '',
-  description: props.item?.description || '',
-  status: props.item?.status ?? true,
-})
-
+const title = 'Fee Structure Component'
+const isCreate = computed(() => !route.params.uuid)
+const initialized = ref(false)
 const processing = ref(false)
+const submitError = ref('')
+const errors = ref({})
+const preReq = ref(null)
 
 const navs = [
-  { label: 'Finance', path: 'Finance' },
-  { label: 'Fee Structure Component', path: 'Action' },
-]
+    { label: 'Finance' },
+    { label: 'Fee Structure Component' },
+  ]
 
-const submit = () => {
-  processing.value = true
-  router.post('/finance/feestructurecomponent', form, {
-    onFinish: () => { processing.value = false },
+const form = reactive({
+    components: [],
   })
+
+const relationOptions = reactive({})
+
+async function loadPreRequisite() {
+  if (typeof financeFeeStructureComponents.preRequisite !== 'function') return
+  try {
+    const { data } = await financeFeeStructureComponents.preRequisite()
+    preReq.value = data
+        // no relation fields
+  } catch {}
 }
 
-const back = () => router.back()
+async function loadRecordAndPreReq(uuid) {
+  await Promise.all([loadRecord(uuid), loadPreRequisite()])
+}
+
+async function loadRecord(uuid) {
+  try {
+    const { data } = await financeFeeStructureComponents.show(uuid)
+    const record = data?.feestructurecomponent ?? data
+        Object.keys(form).forEach((k) => {
+      let v = record[k]
+      if (v && typeof v === 'object' && !Array.isArray(v)) v = v.uuid ?? v.id ?? v.name ?? ''
+      if (v === null || v === undefined) {
+        v = Array.isArray(form[k]) ? [] : (typeof form[k] === 'boolean' ? false : '')
+      }
+      form[k] = v
+    })
+  } catch {
+    // keep defaults
+  }
+}
+
+async function submit() {
+  processing.value = true
+  errors.value = {}
+  submitError.value = ''
+  try {
+    let message
+    if (isCreate.value) {
+      const res = await financeFeeStructureComponents.store({ ...form })
+      message = res.data?.message || 'Fee Structure Component created successfully.'
+    } else {
+      const res = await financeFeeStructureComponents.update(route.params.uuid, { ...form })
+      message = res.data?.message || 'Fee Structure Component updated successfully.'
+    }
+    Swal.fire({ icon: 'success', title: 'Success', text: message, toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
+    router.push({ name: 'finance.fee-structure-component.index' })
+  } catch (e) {
+    if (e.fieldErrors && Object.keys(e.fieldErrors).length) {
+      errors.value = e.fieldErrors
+    }
+    if (e.toastMessage) submitError.value = e.toastMessage
+  }
+  processing.value = false
+}
+
+onMounted(async () => {
+  if (!isCreate.value) {
+    await loadRecordAndPreReq(route.params.uuid)
+  } else {
+    await loadPreRequisite()
+  }
+  initialized.value = true
+})
 </script>

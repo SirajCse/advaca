@@ -1,12 +1,18 @@
-<template>
-  <router-link :to="to" class="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
-    <slot>{{ $trans('global.detail') || 'Detail' }}</slot>
-  </router-link>
-</template>
+<script setup>
+import { useRouter } from 'vue-router'
+import { Button } from '@/components/ui/button'
+import { Eye } from 'lucide-vue-next'
 
-<script>
-export default {
-  name: 'ShowButton',
-  props: { to: { type: [String, Object], required: true } },
-};
+const props = defineProps({
+  name: { type: String, required: true },
+  uuid: { type: String, required: true },
+})
+const router = useRouter()
 </script>
+
+<template>
+  <Button variant="ghost" size="xs" @click="router.push({ name: props.name, params: { uuid: props.uuid } })">
+    <Eye class="h-3.5 w-3.5" />
+    View
+  </Button>
+</template>

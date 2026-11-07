@@ -1,59 +1,62 @@
-<!--
-  Source path: resources/js/views/Pages/Notification/Index.vue
-  Component:   Index
-  Rebuilt clean from manifest path. Uses shadcn-vue components.
--->
+<script setup>
+import { onMounted, ref } from 'vue'
+import { getNotifications, readAllNotifications, readNotification } from '@/api/auth'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import PageHeader from '@/views/Components/PageHeader.vue'
+import ParentTransition from '@/views/Layouts/ParentTransition.vue'
+import { fmtDateTime } from '@/lib/helpers'
+
+const items = ref([])
+const loading = ref(true)
+
+async function load() {
+  loading.value = true
+  try {
+    const { data } = await getNotifications({ per_page: 50 })
+    items.value = data?.data ?? []
+  } catch {
+    items.value = []
+  }
+  loading.value = false
+}
+
+async function markRead(n) {
+  try {
+    await readNotification(n.uuid || n.id)
+    await load()
+  } catch {}
+}
+
+async function markAll() {
+  try {
+    await readAllNotifications()
+    await load()
+  } catch {}
+}
+
+onMounted(load)
+</script>
+
 <template>
-  <div class="space-y-6">
-    <PageHeader :title="$t('notification.index.vue.index.vue')" :navs="navs">
-      <PageHeaderAction :name="'Index'" :title="$t('notification.index.vue.index.vue')" :actions="['list']" />
+  <div class="space-y-5">
+    <PageHeader title="Notifications" :navs="[{ label: 'User' }, { label: 'Notifications' }]">
+      <Button variant="outline" size="sm" @click="markAll">Mark all read</Button>
     </PageHeader>
-    <ParentTransition appear :visibility="true">
-      <DataTable :title="$t('notification.index.vue.index.vue')" :headers="headers" :meta="meta" module="notification.index.vue">
-        <TableRow v-for="item in items" :key="item.id || item.uuid">
-          <TableCell>{{ item.name || item.title || item.uuid }}</TableCell>
-          <TableCell>{{ item.createdAt || item.created_at || '-' }}</TableCell>
-          <TableCell class="text-right">
-            <Button variant="ghost" size="sm" @click="view(item)">View</Button>
-            <Button variant="ghost" size="sm" @click="edit(item)">Edit</Button>
-          </TableCell>
-        </TableRow>
-        <TableRow v-if="!items.length">
-          <TableCell colspan="3" class="text-center text-muted-foreground py-8">
-            No records found.
-          </TableCell>
-        </TableRow>
-      </DataTable>
+    <ParentTransition appear :visibility="!loading">
+      <Card>
+        <CardContent class="divide-y p-0">
+          <div v-for="n in items" :key="n.uuid || n.id" class="flex items-start justify-between gap-4 p-4">
+            <div>
+              <div class="font-medium" :class="{ 'opacity-60': n.read_at }">{{ n.title || 'Notification' }}</div>
+              <div class="text-sm text-muted-foreground">{{ n.description || n.message || '' }}</div>
+              <div class="mt-1 text-xs text-muted-foreground">{{ fmtDateTime(n.created_at) }}</div>
+            </div>
+            <Button v-if="!n.read_at" variant="outline" size="xs" @click="markRead(n)">Mark read</Button>
+          </div>
+          <div v-if="!items.length" class="p-10 text-center text-muted-foreground">No notifications yet.</div>
+        </CardContent>
+      </Card>
     </ParentTransition>
   </div>
 </template>
-
-<script setup>
-import { ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
-import { Button } from '@/components/ui/button'
-import { TableBody, TableRow, TableCell } from '@/components/ui/table'
-import PageHeader from '@/views/Components/PageHeader.vue'
-import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
-import ParentTransition from '@/views/Components/ParentTransition.vue'
-import DataTable from '@/views/Components/DataTable.vue'
-
-const props = defineProps({
-  items: { type: Array, default: () => [] },
-  meta: { type: Object, default: () => ({}) },
-})
-
-const headers = [
-  { name: 'name', label: 'Name' },
-  { name: 'createdAt', label: 'Created' },
-  { name: 'action', label: 'Actions' },
-]
-
-const navs = [
-  { label: 'Notification', path: 'Notification' },
-  { label: 'Index.vue', path: 'Index' },
-]
-
-const view = (item) => router.push({ name: 'IndexShow', params: { uuid: item.uuid } })
-const edit = (item) => router.push({ name: 'IndexEdit', params: { uuid: item.uuid } })
-</script>
