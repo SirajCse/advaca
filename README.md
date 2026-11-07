@@ -81,3 +81,64 @@ full tree. Re-run them any time the backend changes.
   the SPA handles the standard login flow and shows OTP pages when enabled.
 - Reports that were blade-only (`routes/report.php` view routes) are not part
   of the SPA; everything under `/api/app/*` is wired.
+
+
+## Run
+
+```bash
+php artisan tinker
+
+
+$_SERVER['HTTP_HOST']   = 'localhost';
+$_SERVER['SERVER_PORT'] = 80;
+$_SERVER['HTTPS']       = 'off';
+
+$name             = 'Admin';
+$username         = 'admin';
+$email            = 'admin@gmail.com';
+$password         = 'admin123';
+
+$db_host          = '127.0.0.1';
+$db_port          = '3306';
+$db_name          = 'advaca';
+$db_username      = 'superadmin';
+$db_password      = 'superadmin';
+
+$access_code      = '13272';
+$registered_email = $email;
+$skip_symlink     = 'no';
+$db_imported      = false;
+
+$params = [
+'name'             => $name,
+'username'         => $username,
+'email'            => $email,
+'password'         => $password,
+'db_host'          => $db_host,
+'db_port'          => $db_port,
+'db_name'          => $db_name,
+'db_username'      => $db_username,
+'db_password'      => $db_password,
+'access_code'      => $access_code,
+'registered_email' => $registered_email,
+'skip_symlink'     => $skip_symlink,
+'db_imported'      => $db_imported,
+];
+
+$request = \Illuminate\Http\Request::create('/', 'POST', $params);
+app()->instance('request', $request);
+
+dump(request()->all());          // should print $params
+dump(env('APP_ENV'));            // must NOT be 'testing'
+
+app(\Mint\Service\Actions\Install::class)->execute();
+
+// --- 7. Verify ---
+echo PHP_EOL;
+echo "INSTALLED  = " . \App\Helpers\SysHelper::getApp('INSTALLED') . PHP_EOL;
+echo "Teams      = " . \App\Models\Team::count() . PHP_EOL;
+echo "Users      = " . \App\Models\User::count() . PHP_EOL;
+echo "Roles      = " . \Spatie\Permission\Models\Role::count() . PHP_EOL;
+echo "Admin role = " . (\Spatie\Permission\Models\Role::where('name','admin')->exists() ? 'yes' : 'no') . PHP_EOL;
+echo "✅ Install finished." . PHP_EOL;
+```
