@@ -1,0 +1,1 @@
+import{Q as p}from"./app-BAurCMjd.js";const d={index:a=>p.get("/app/guardians",{params:a}),show:(a,t)=>p.get(`/app/guardians/${a}`,{params:t}),update:(a,t)=>p.put(`/app/guardians/${a}`,t),destroy:a=>p.delete(`/app/guardians/${a}`)};export{d as g};

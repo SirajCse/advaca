@@ -1,0 +1,1 @@
+import{Q as o}from"./app-BAurCMjd.js";const e={index:p=>o.get("/app/blogs",{params:p}),show:(p,s)=>o.get(`/app/blogs/${p}`,{params:s}),store:p=>o.post("/app/blogs",p),update:(p,s)=>o.put(`/app/blogs/${p}`,s),destroy:p=>o.delete(`/app/blogs/${p}`)};export{e as b};

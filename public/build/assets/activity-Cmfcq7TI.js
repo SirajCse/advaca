@@ -1,0 +1,1 @@
+import{Q as p}from"./app-BAurCMjd.js";const s={index:t=>p.get("/app/activity/trips",{params:t}),show:(t,i)=>p.get(`/app/activity/trips/${t}`,{params:i}),store:t=>p.post("/app/activity/trips",t),update:(t,i)=>p.put(`/app/activity/trips/${t}`,i),destroy:t=>p.delete(`/app/activity/trips/${t}`)};export{s as a};

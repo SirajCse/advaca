@@ -1,0 +1,1 @@
+import{Q as p}from"./app-BAurCMjd.js";const t={index:e=>p.get("/app/exams",{params:e}),show:(e,a)=>p.get(`/app/exams/${e}`,{params:a}),store:e=>p.post("/app/exams",e),update:(e,a)=>p.put(`/app/exams/${e}`,a),destroy:e=>p.delete(`/app/exams/${e}`)};export{t as e};
