@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import http from '@/lib/http'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -7,11 +8,21 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import PageHeader from '@/views/Components/PageHeader.vue'
 import { fmtDate } from '@/lib/helpers'
 
+const route = useRoute()
+const router = useRouter()
+
 const stats = ref(null)
 const studentChart = ref(null)
 const schedule = ref([])
 const loading = ref(true)
 const error = ref(false)
+// unknown URLs redirect here with ?nf=<original path> (the router guard keeps
+// signed-in users away from the dead-end 404 page) — surface it once, then
+// clean the query so a refresh does not nag.
+const notFoundPath = ref(typeof route.query.nf === 'string' ? route.query.nf : '')
+if (notFoundPath.value) {
+  router.replace({ path: '/dashboard', query: {} })
+}
 
 onMounted(async () => {
   try {
@@ -36,6 +47,13 @@ const statEntries = () => Object.entries(stats.value || {}).slice(0, 8)
 <template>
   <div class="space-y-6">
     <PageHeader title="Dashboard" :navs="[{ label: 'Home' }, { label: 'Dashboard' }]" />
+
+    <Alert v-if="notFoundPath" class="border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+      <AlertTitle>Page not found</AlertTitle>
+      <AlertDescription>
+        We could not find <code class="font-mono text-xs">{{ notFoundPath }}</code> — you were brought to the dashboard instead. Use the menu on the left to open the page you need.
+      </AlertDescription>
+    </Alert>
 
     <Alert v-if="error">
       <AlertTitle>Welcome to AdvAca</AlertTitle>

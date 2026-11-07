@@ -16,6 +16,21 @@ FormRequests and ListServices.
 - api base: `/api/v1` (RouteServiceProvider `VERSION_PATH = '/v1'`)
 - Sanctum bearer-token auth + CSRF meta tag
 
+## What changed in v1.5.9.0 — "select / data pattern" full checkup
+
+| Symptom | Root cause | Fixed by |
+|---|---|---|
+| **List pages render rows of dashes (`—`) / "data pattern not work"** | the untouched backend's resources return **snake_case** keys (`code_number`, `father_name`, `batch_name`, …) and Cal date objects (`birth_date: {type, value, formatted, …}`), while the reconstructed entity specs used **camelCase** column keys (`codeNumber`, `birthDate`) — every lookup missed and the cell fell back to the dash placeholder | ✅ new `resolveKey()` in `lib/helpers.js` resolves every column/field against exact, snake_case, camelCase **and dot-path** variants; `displayValue()` renders Cal objects as their `formatted` date, enum details as labels, arrays comma-joined, booleans as Yes/No |
+| same mismatch broke **edit forms** (fields came back empty when opening an existing record) | `CrudAction.loadRecord()` read `record[f.n]` directly | ✅ uses `resolveKey()` and unwraps Cal objects to their raw `.value` for date/number inputs |
+| **Selects offered no choices / choose-period pages errored with a bare 422 toast** | while no academic period is selected the backend's `UserConfig` middleware answers **422 "Please select a period to continue."** for every non-whitelisted endpoint — the frontend only toasted it | ✅ the axios interceptor now detects that exact 422 and **opens the global period picker automatically** (with an info toast) — the same behaviour the original UI had |
+| **Period picker dead-ended non-admin accounts** ("only show this, nothing to do") | the list + Continue button were gated behind `auth.can('period:change')`; accounts without `period:change` only saw the static note | ✅ the list and Continue are now available to **every signed-in user** (the backend still enforces `period:change` on save with a clear 403 message); the picker preselects current → default → first period so one click continues |
+| **Unknown URLs hard-404'd** ("The page you are looking for could not be found.") | the catch-all route rendered the 404 page even for signed-in users | ✅ signed-in users are redirected to the dashboard with a one-time "page not found — brought you here" notice; guests go to login. The named `/404` route still exists for explicit use |
+| "Invalid credentials" shown when the server was unreachable | any error (including network failures) mapped to the credentials message | ✅ network-level failures now say "Cannot reach the server…" so a stopped WAMP/Laravel service is obvious |
+| navigation could blank out when `/config` or `/auth/user` failed at boot | guard `await`ed both calls without protection | ✅ both bootstrap calls are try/caught — a failing backend degrades gracefully instead of blocking the router |
+| `<base href>` mismatch made every route fall into the catch-all | base detection trusted the tag blindly | ✅ the tag is only honoured when it is really a prefix of the current path; trailing slashes are stripped before matching |
+
+Verified end-to-end (mock backend + headless Chromium, **36/36 checks, zero runtime errors**): both deployment shapes (domain-root `/app` and WAMP sub-folder `/advaca/public/app`), login → dashboard, **hard-reload deep links** (students / periods / departments / config), unknown-URL redirect for signed-in users, forced period picker (list visible to everyone, one-click Continue, session skip), student list rendering **real resource-shaped data** (snake_case + Cal formatted dates + enum labels).
+
 ## What changed in v1.5.8.0 — "every page 404" fix pack
 
 | Symptom | Root cause | Fixed by |

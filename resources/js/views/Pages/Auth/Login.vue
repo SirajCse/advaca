@@ -55,7 +55,13 @@ async function submit() {
     Swal.fire({ icon: 'success', title: 'Logged in', toast: true, position: 'top-end', timer: 2500, showConfirmButton: false })
     router.push(route.query.redirect && route.query.redirect !== '/' ? route.query.redirect : '/dashboard')
   } catch (e) {
-    error.value = e.toastMessage || e?.response?.data?.message || 'Invalid credentials. Please try again.'
+    // a request that never reached the backend (server down / wrong base
+    // URL / offline) must not masquerade as "Invalid credentials"
+    if (!e.response) {
+      error.value = 'Cannot reach the server. Please check your internet connection and that the Laravel app is running.'
+    } else {
+      error.value = e.toastMessage || e?.response?.data?.message || 'Invalid credentials. Please try again.'
+    }
   }
   processing.value = false
 }

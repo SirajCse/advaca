@@ -42,12 +42,10 @@ const dismissed = computed(() => periodStore.dontAsk || periodStore.skipped)
 const forced = computed(() => auth.needsPeriod && !dismissed.value)
 const open = computed(() => forced.value || periodStore.pickerOpen)
 
-const canManage = computed(() => {
-  // period:change gates POST periods/{uuid}/select; admins and super admins
-  // always can (auth.can already resolves the backend's ['*'] wildcard).
-  return auth.can('period:change')
-})
-
+// The backend itself gates POST periods/{uuid}/select with permission
+// period:change — but the LIST is whitelisted for every signed-in user, so
+// everyone sees the periods and can try to select (a non-manager gets the
+// backend's own clear 403 message instead of a silent dead-end).
 const canClose = computed(() => !forced.value)
 
 async function load() {
@@ -61,8 +59,10 @@ async function load() {
     const current = rows.find((p) => p.uuid === auth.currentPeriodId)
       || rows.find((p) => p.id === auth.currentPeriodId)
     if (current) periodStore.setCurrentName(current.name || current.code_number || '')
-    const def = rows.find((p) => p.is_default)
-    if (def) selected.value = def.uuid
+    // preselect: the user's current period, else the team default, else the
+    // first row — "Continue" is ALWAYS usable in a single click.
+    const def = current || rows.find((p) => p.is_default) || rows[0]
+    selected.value = def ? (def.uuid || def.id) : ''
   } catch (e) {
     error.value = e?.response?.data?.message || 'Failed to load periods'
   } finally {
@@ -85,10 +85,13 @@ async function submit() {
     window.location.reload()
   } catch (e) {
     const status = e?.response?.status
-    error.value = e?.response?.data?.message
-      || (status === 403
-        ? 'You do not have permission to change the period. Please contact your administrator.'
-        : 'Failed to select the period')
+    if (status === 401) {
+      error.value = 'Your session has expired. Please sign in again.'
+    } else if (status === 403) {
+      error.value = 'You do not have permission to change the period. Please contact your administrator.'
+    } else {
+      error.value = e?.response?.data?.message || 'Failed to select the period'
+    }
     saving.value = false
   }
 }
@@ -147,7 +150,7 @@ onMounted(() => {
           <AlertDescription>{{ error }}</AlertDescription>
         </Alert>
 
-        <div v-if="canManage" class="max-h-72 space-y-1.5 overflow-y-auto pr-1">
+        <div class="max-h-72 space-y-1.5 overflow-y-auto pr-1">
           <button
             v-for="p in periods"
             :key="p.uuid || p.id"
@@ -161,17 +164,13 @@ onMounted(() => {
               {{ [p.code, p.alias, p.session?.name].filter(Boolean).join(' · ') }}
             </span>
           </button>
-          <p v-if="!periods.length" class="py-6 text-center text-sm text-muted-foreground">
+          <p v-if="!periods.length && !error" class="py-6 text-center text-sm text-muted-foreground">
             No periods found. Ask your administrator to create one under Academic &rarr; Period.
           </p>
         </div>
 
-        <div v-else class="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
-          Your account works within the period assigned by your administrator.
-        </div>
-
         <div class="flex flex-col gap-2">
-          <Button v-if="canManage" class="w-full" :disabled="!selected || saving" @click="submit">
+          <Button class="w-full" :disabled="!selected || saving" @click="submit">
             <Loader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
             Continue
           </Button>

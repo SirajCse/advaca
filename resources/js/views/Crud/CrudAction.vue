@@ -100,9 +100,19 @@ async function loadRecord() {
     const data = await api.show(route.params.uuid)
     const record = data?.item || data?.record || data
     for (const f of entity.value.fields || []) {
-      const v = record?.[f.n]
+      // resolveKey bridges snake_case resources with camelCase spec keys;
+      // Cal date objects unwrap to their raw .value for the form input.
+      let v = resolveKey(record, f.n)
       if (v !== undefined && v !== null) {
-        form[f.n] = f.t === 'checkbox' ? Boolean(v) : (f.t === 'multiselect' ? (Array.isArray(v) ? v : []) : v)
+        if (f.t === 'checkbox') {
+          form[f.n] = Boolean(v)
+        } else if (f.t === 'multiselect') {
+          form[f.n] = Array.isArray(v) ? v : []
+        } else if (typeof v === 'object' && !Array.isArray(v)) {
+          form[f.n] = v.value !== undefined ? v.value : v
+        } else {
+          form[f.n] = v
+        }
       }
     }
   } catch { /* handled */ }

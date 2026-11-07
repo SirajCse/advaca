@@ -13,12 +13,18 @@ export function detectAppBase() {
   // 1. an explicit <base href> in the blade always wins
   const baseEl = document.querySelector('base')
   if (baseEl && baseEl.getAttribute('href')) {
-    return stripTrailingSlash(baseEl.getAttribute('href').replace(/^\w+:\/\/[^/]+/, ''))
+    const fromTag = stripTrailingSlash(baseEl.getAttribute('href').replace(/^\w+:\/\/[^/]+/, ''))
+    // only trust the tag when it is really a prefix of the current path,
+    // otherwise a stale tag would make every route fall into the catch-all
+    if (window.location.pathname === fromTag || window.location.pathname.startsWith(fromTag + '/')) {
+      return fromTag
+    }
   }
 
-  const path = window.location.pathname
+  const path = stripTrailingSlash(window.location.pathname)
 
   // 2. "/…/app" or "/…/app/…" — everything before the final /app segment
+  //    (greedy so nested copies like /advaca/public/app win over /app)
   const m = path.match(/^(.*\/app)(?=\/|$)/)
   if (m) return m[1]
 

@@ -81,7 +81,7 @@
                     <Checkbox v-if="col.k === 'selectAll'" disabled />
                     <div v-else class="truncate">
                       {{ cellValue(row, col) }}
-                      <span v-if="col.sub && row[col.sub]" class="block text-xs text-muted-foreground">{{ row[col.sub] }}</span>
+                      <span v-if="col.sub && resolveKey(row, col.sub) !== undefined" class="block text-xs text-muted-foreground">{{ displayValue(resolveKey(row, col.sub)) }}</span>
                     </div>
                   </TableCell>
                   <TableCell v-if="hasActions" class="text-center">
@@ -163,6 +163,7 @@ import PageHeader from '@/views/Components/PageHeader.vue'
 import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 import { trans } from '@/spec/lang'
 import { createCrudApi, normalizeList } from '@/api/crud'
+import { resolveKey, displayValue } from '@/lib/helpers'
 import {
   Plus, Search, Inbox, ChevronLeft, ChevronRight, MoreVertical, Eye, Pencil, Copy, Trash2, ArrowUpDown,
 } from 'lucide-vue-next'
@@ -264,10 +265,10 @@ function snakeCase(s) {
 }
 
 function cellValue(row, col) {
-  const v = row[col.k]
-  if (v === null || v === undefined) return '—'
-  if (typeof v === 'object') return v.label || v.name || v.title || '—'
-  return v
+  // resolveKey bridges the backend's snake_case resources with the spec's
+  // camelCase keys (codeNumber -> code_number) and dot paths; displayValue
+  // renders Cal date objects / enum details / arrays as readable text.
+  return displayValue(resolveKey(row, col.k))
 }
 
 const baseName = computed(() => {

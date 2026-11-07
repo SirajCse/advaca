@@ -18,7 +18,7 @@
             <div v-for="f in visibleFields" :key="f.n" class="min-w-0">
               <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{{ f.l }}</dt>
               <dd class="mt-0.5 break-words text-sm text-foreground">
-                {{ displayValue(record?.[f.n]) || '—' }}
+                {{ displayValue(resolveKey(record, f.n)) || '—' }}
               </dd>
             </div>
           </div>
@@ -39,6 +39,7 @@ import PageHeader from '@/views/Components/PageHeader.vue'
 import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 import { trans } from '@/spec/lang'
 import { createCrudApi } from '@/api/crud'
+import { displayValue as displayValueHelper, resolveKey } from '@/lib/helpers'
 
 const route = useRoute()
 const router = useRouter()
@@ -56,8 +57,9 @@ const visibleFields = computed(() =>
 function displayValue(v) {
   if (v === null || v === undefined) return ''
   if (typeof v === 'boolean') return v ? 'Yes' : 'No'
-  if (typeof v === 'object') return v.label || v.name || v.title || ''
-  return String(v)
+  // delegate to the shared renderer (Cal dates, enum details, arrays)
+  const out = displayValueHelper(v)
+  return out === '—' ? '' : out
 }
 
 const api = createCrudApi(entity.value.endpoints || {})

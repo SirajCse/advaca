@@ -23,16 +23,41 @@ router.beforeEach(async (to) => {
 
   // bootstrap app config once (public GET /config — same as the original UI,
   // which loads it before the auth guard so login-page toggles like OTP
-  // registration work)
-  if (!config.loaded) await config.fetch()
+  // registration work). A failing config endpoint must NEVER block
+  // navigation — the app degrades gracefully instead of blanking out.
+  if (!config.loaded) {
+    try {
+      await config.fetch()
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[advaca-vue] config fetch failed, continuing with defaults', e?.message)
+    }
+  }
 
-  if (!auth.ready) await auth.init()
+  if (!auth.ready) {
+    try {
+      await auth.init()
+    } catch (e) {
+      // auth.init resolves its own errors; this guard is belt & braces so a
+      // thrown bootstrap error can never abort the whole router.
+      // eslint-disable-next-line no-console
+      console.warn('[advaca-vue] auth init failed, continuing as guest', e?.message)
+    }
+  }
 
   if (to.meta.guest && auth.isLoggedIn) {
     return { path: '/dashboard' }
   }
   if (!to.meta.guest && !auth.isLoggedIn) {
     return { path: '/login', query: { redirect: to.fullPath } }
+  }
+
+  // unknown URL for a signed-in user must never dead-end on the 404 page —
+  // land on the dashboard instead (the intended path travels in ?nf= so the
+  // dashboard can show a "page not found" notice). Guests are already sent
+  // to /login above.
+  if (to.name === 'NotFound' && auth.isLoggedIn) {
+    return { path: '/dashboard', query: { nf: to.fullPath } }
   }
 
   // route permission guard (mirrors the original router's meta.permissions

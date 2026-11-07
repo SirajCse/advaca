@@ -6,6 +6,9 @@
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { detectApiBase } from './base'
+// period store has no dependency on http (no import cycle) — it is resolved
+// lazily inside the interceptor so Pinia is already active by then.
+import { usePeriodStore } from '@/stores/period'
 
 const http = axios.create({
   baseURL: detectApiBase(),
@@ -52,7 +55,31 @@ http.interceptors.response.use(
           if (first) msg = Array.isArray(first) ? first[0] : String(first)
         }
         error.toastMessage = msg
-        if (msg && !error.config?.silent) {
+
+        // UserConfig middleware "choose_period_info" gate ("Please select a
+        // period to continue."): instead of a bare error toast, open the
+        // global academic-period picker so the user can resolve it in place —
+        // exactly how the original UI behaved.
+        if (typeof msg === 'string' && /select a period/i.test(msg)) {
+          try {
+            const periodStore = usePeriodStore()
+            periodStore.skipped = false
+            periodStore.openPicker()
+          } catch {
+            // pinia not ready yet (very early boot) — fall back to the toast
+          }
+          if (msg && !error.config?.silent) {
+            Swal.fire({
+              icon: 'info',
+              title: 'Academic period required',
+              text: String(msg),
+              toast: true,
+              position: 'top-end',
+              timer: 4000,
+              showConfirmButton: false,
+            })
+          }
+        } else if (msg && !error.config?.silent) {
           Swal.fire({
             icon: 'error',
             title: 'Error',
