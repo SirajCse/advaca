@@ -60,10 +60,29 @@ No Laravel file needs to change: `app.blade.php` already loads
 
 ### Auth flow
 
-- `POST /api/auth/login` → session cookie (Sanctum) + optional device token.
-- `GET /api/auth/user` boots the session (`stores/auth.js`).
-- 401 responses clear the session and redirect to `/app/login`.
-- 419 (CSRF expiry) reloads the page.
+- `POST /api/auth/login` with payload `{ email, password, remember_me, device_name: 'web' }`.
+  - The backend `LoginRequest` requires the **`email`** field — it accepts a
+    **username or an email address** in it (`getCredentials()` in
+    `app/Actions/Auth/Login.php` detects which one it is).
+  - A non-empty `device_name` makes the backend return a **Sanctum bearer
+    token**, so the SPA works on any deployment without session/CSRF
+    configuration.
+- The token is stored in `localStorage` (`advaca-token`) and re-applied to the
+  axios `Authorization` header on every page load (`stores/auth.js`), so
+  refreshing the page keeps you signed in.
+- `GET /api/auth/user` (Bearer token) hydrates the user (`stores/auth.js`).
+- 401 responses clear the token and redirect to `/app/login`.
+- 419 (CSRF expiry) reloads the page; 429 (login throttle, 5/min) shows the
+  backend's "too many attempts" message.
+
+### Login troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| "Invalid credentials. Please try again." with correct credentials | Frontend sent `username` field but backend requires `email` (fixed in this version) | Use this version's `Login.vue` |
+| Logged in but bounced back to `/app/login` after refresh | Token not restored on boot (fixed in this version) | Use this version's `stores/auth.js` |
+| "Too many attempts" | Login is throttled to 5/min (`RouteServiceProvider`) | Wait 1 minute |
+| "These credentials do not match our records." | Wrong password for that username/email | Reset the password (`/app/password/reset`) |
 
 ## Regenerating
 
@@ -81,64 +100,3 @@ full tree. Re-run them any time the backend changes.
   the SPA handles the standard login flow and shows OTP pages when enabled.
 - Reports that were blade-only (`routes/report.php` view routes) are not part
   of the SPA; everything under `/api/app/*` is wired.
-
-
-## Run
-
-```bash
-php artisan tinker
-
-
-$_SERVER['HTTP_HOST']   = 'localhost';
-$_SERVER['SERVER_PORT'] = 80;
-$_SERVER['HTTPS']       = 'off';
-
-$name             = 'Admin';
-$username         = 'admin';
-$email            = 'admin@gmail.com';
-$password         = 'admin123';
-
-$db_host          = '127.0.0.1';
-$db_port          = '3306';
-$db_name          = 'advaca';
-$db_username      = 'superadmin';
-$db_password      = 'superadmin';
-
-$access_code      = '13272';
-$registered_email = $email;
-$skip_symlink     = 'no';
-$db_imported      = false;
-
-$params = [
-'name'             => $name,
-'username'         => $username,
-'email'            => $email,
-'password'         => $password,
-'db_host'          => $db_host,
-'db_port'          => $db_port,
-'db_name'          => $db_name,
-'db_username'      => $db_username,
-'db_password'      => $db_password,
-'access_code'      => $access_code,
-'registered_email' => $registered_email,
-'skip_symlink'     => $skip_symlink,
-'db_imported'      => $db_imported,
-];
-
-$request = \Illuminate\Http\Request::create('/', 'POST', $params);
-app()->instance('request', $request);
-
-dump(request()->all());          // should print $params
-dump(env('APP_ENV'));            // must NOT be 'testing'
-
-app(\Mint\Service\Actions\Install::class)->execute();
-
-// --- 7. Verify ---
-echo PHP_EOL;
-echo "INSTALLED  = " . \App\Helpers\SysHelper::getApp('INSTALLED') . PHP_EOL;
-echo "Teams      = " . \App\Models\Team::count() . PHP_EOL;
-echo "Users      = " . \App\Models\User::count() . PHP_EOL;
-echo "Roles      = " . \Spatie\Permission\Models\Role::count() . PHP_EOL;
-echo "Admin role = " . (\Spatie\Permission\Models\Role::where('name','admin')->exists() ? 'yes' : 'no') . PHP_EOL;
-echo "✅ Install finished." . PHP_EOL;
-```

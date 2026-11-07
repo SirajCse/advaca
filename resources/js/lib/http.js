@@ -55,6 +55,23 @@ http.interceptors.response.use(
             showConfirmButton: false,
           })
         }
+      } else if (resp.status === 429) {
+        const d = resp.data || {}
+        let msg = d.message || 'Too many attempts. Please try again in a minute.'
+        if (d.errors) {
+          const first = Object.values(d.errors)[0]
+          if (first) msg = Array.isArray(first) ? first[0] : String(first)
+        }
+        error.toastMessage = msg
+        Swal.fire({
+          icon: 'warning',
+          title: 'Slow down',
+          text: String(msg),
+          toast: true,
+          position: 'top-end',
+          timer: 6000,
+          showConfirmButton: false,
+        })
       } else if (resp.status >= 500) {
         Swal.fire({
           icon: 'error',

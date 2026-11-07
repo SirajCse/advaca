@@ -2,12 +2,20 @@ import { defineStore } from 'pinia'
 import http from '@/lib/http'
 
 export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    user: null,
-    ready: false,
-    promise: null,
-    token: localStorage.getItem('advaca-token') || null,
-  }),
+  state: () => {
+    const token = localStorage.getItem('advaca-token') || null
+    // Re-apply the bearer token on every page load so authenticated
+    // requests (e.g. /auth/user during boot) keep working after refresh.
+    if (token) {
+      http.defaults.headers.common.Authorization = `Bearer ${token}`
+    }
+    return {
+      user: null,
+      ready: false,
+      promise: null,
+      token,
+    }
+  },
   getters: {
     isLoggedIn: (s) => !!s.user,
     isSuperAdmin: (s) => !!s.user?.is_super_admin,

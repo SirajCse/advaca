@@ -5,19 +5,18 @@ import Swal from 'sweetalert2'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { registerUser } from '@/api/auth'
 
 const router = useRouter()
+// Backend RegisterRequest expects: name, email, username,
+// password (+ password_confirmation with `same:` rule).
 const form = reactive({
-  first_name: '',
-  last_name: '',
+  name: '',
   email: '',
-  contact_number: '',
   username: '',
   password: '',
-  terms_and_conditions: false,
+  password_confirmation: '',
 })
 const processing = ref(false)
 const error = ref('')
@@ -30,7 +29,7 @@ async function submit() {
     Swal.fire({ icon: 'success', title: 'Registered', text: data?.message || 'Account created. Please login.', timer: 3500, showConfirmButton: true })
     router.push('/login')
   } catch (e) {
-    error.value = e.toastMessage || 'Registration failed. Please check the form.'
+    error.value = e.toastMessage || e?.response?.data?.message || 'Registration failed. Please check the form.'
   }
   processing.value = false
 }
@@ -44,23 +43,13 @@ async function submit() {
     </CardHeader>
     <CardContent class="space-y-4">
       <form class="space-y-4" @submit.prevent="submit">
-        <div class="grid grid-cols-2 gap-3">
-          <div class="space-y-1.5">
-            <Label for="first_name">First name</Label>
-            <Input id="first_name" v-model="form.first_name" required />
-          </div>
-          <div class="space-y-1.5">
-            <Label for="last_name">Last name</Label>
-            <Input id="last_name" v-model="form.last_name" />
-          </div>
+        <div class="space-y-1.5">
+          <Label for="name">Full name</Label>
+          <Input id="name" v-model="form.name" required />
         </div>
         <div class="space-y-1.5">
           <Label for="email">Email</Label>
           <Input id="email" v-model="form.email" type="email" required />
-        </div>
-        <div class="space-y-1.5">
-          <Label for="contact_number">Contact number</Label>
-          <Input id="contact_number" v-model="form.contact_number" type="tel" />
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div class="space-y-1.5">
@@ -72,10 +61,10 @@ async function submit() {
             <Input id="reg-password" v-model="form.password" type="password" required />
           </div>
         </div>
-        <label class="flex items-center gap-2 text-sm text-muted-foreground">
-          <Switch v-model="form.terms_and_conditions" />
-          I agree to the terms and conditions
-        </label>
+        <div class="space-y-1.5">
+          <Label for="reg-password-confirm">Confirm password</Label>
+          <Input id="reg-password-confirm" v-model="form.password_confirmation" type="password" required />
+        </div>
         <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
         <Button type="submit" class="w-full" :disabled="processing">{{ processing ? 'Creating…' : 'Create account' }}</Button>
       </form>

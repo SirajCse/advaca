@@ -17,7 +17,6 @@ const form = reactive({
   username: '',
   password: '',
   remember_me: false,
-  device_name: '',
 })
 const processing = ref(false)
 const error = ref('')
@@ -26,14 +25,24 @@ async function submit() {
   processing.value = true
   error.value = ''
   try {
-    const data = await auth.login({ ...form })
+    // Backend LoginRequest expects the `email` field (it accepts a username
+    // OR an email address in it) and returns a bearer token when
+    // `device_name` is provided — token auth keeps the SPA working on any
+    // deployment without session/CSRF configuration.
+    const payload = {
+      email: form.username,
+      password: form.password,
+      remember_me: form.remember_me,
+      device_name: 'web',
+    }
+    const data = await auth.login(payload)
     if (data.two_factor_security) {
       Swal.fire({ icon: 'info', title: 'Verification required', text: 'Two factor security is enabled on your account.' })
     }
     Swal.fire({ icon: 'success', title: 'Logged in', toast: true, position: 'top-end', timer: 2500, showConfirmButton: false })
     router.push(route.query.redirect && route.query.redirect !== '/' ? route.query.redirect : '/dashboard')
   } catch (e) {
-    error.value = e.toastMessage || 'Invalid credentials. Please try again.'
+    error.value = e.toastMessage || e?.response?.data?.message || 'Invalid credentials. Please try again.'
   }
   processing.value = false
 }
