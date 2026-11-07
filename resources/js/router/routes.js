@@ -1607,12 +1607,17 @@ const routes = [
   { path: '/config/locale/:uuid/edit', name: 'ConfigLocaleEdit', component: CrudAction, meta: {"layout":"app","actions":{"list":"ConfigLocaleList","create":"ConfigLocaleCreate","edit":"ConfigLocaleEdit","destroy":"ConfigLocaleEdit"},"keySearch":false,"pageTitle":"Edit Locale","singularLabel":"Locale","transKey":"global.edit","listPath":"/config/locale","navs":[{"label":"Dashboard","path":"/dashboard"},{"label":"Config","path":"/config"},{"label":"Locale","path":"/config/locale"}],"entity":ENT_Config_Locale} },
   { path: '/product', name: 'Product', component: Placeholder, meta: {"layout":"app","pageTitle":"Product","navs":[{"label":"Dashboard","path":"/dashboard"},{"label":"Product","path":"/product"}]} },
   { path: '/license', name: 'License', component: Placeholder, meta: {"layout":"app","pageTitle":"License","navs":[{"label":"Dashboard","path":"/dashboard"},{"label":"License","path":"/license"}]} },
+  { path: '/option', name: 'Option', component: Placeholder, meta: {"layout":"app","pageTitle":"Option","navs":[{"label":"Dashboard","path":"/dashboard"},{"label":"Option","path":"/option"}]} },
   { path: '/support', name: 'Support', component: Placeholder, meta: {"layout":"app","pageTitle":"Support","navs":[{"label":"Dashboard","path":"/dashboard"},{"label":"Support","path":"/support"}]} },
   { path: '/install', name: 'Install', component: Placeholder, meta: {"layout":"setup","guest":true,"pageTitle":"Install","navs":[{"label":"Install","path":"/install"}]} },
   { path: '/error', name: 'ErrorGeneral', component: Placeholder, meta: {"layout":"error","guest":true,"pageTitle":"ErrorGeneral","navs":[{"label":"ErrorGeneral","path":"/error"}]} },
   { path: '/401', name: 'Error401', component: C_Error401, meta: {"layout":"error","guest":true,"pageTitle":"Error401","navs":[{"label":"Error401","path":"/401"}]} },
   { path: '/403', name: 'Error403', component: C_Error403, meta: {"layout":"error","guest":true,"pageTitle":"Error403","navs":[{"label":"Error403","path":"/403"}]} },
   { path: '/404', name: 'Error404', component: C_Error404, meta: {"layout":"error","guest":true,"pageTitle":"Error404","navs":[{"label":"Error404","path":"/404"}]} },
+  // catch-all: any unknown URL renders the 404 page inside the app shell
+  // instead of a blank main area (mirrors the original frontend's
+  // /:pathMatch(.*)* record — the guard still bounces guests to /login)
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: C_Error404, meta: {"layout":"app","pageTitle":"Page Not Found","navs":[{"label":"Dashboard","path":"/dashboard"}]} },
 ]
 
 export default routes

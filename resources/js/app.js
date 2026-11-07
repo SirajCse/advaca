@@ -44,6 +44,12 @@ app.use(Vue3ApexChart)
 app.config.globalProperties.$trans = (key, params) => i18n.global.t(key, params)
 app.config.globalProperties.$swal = Swal
 
+// keep one broken view from blanking the whole page: log and keep rendering
+app.config.errorHandler = (err, instance, info) => {
+  // eslint-disable-next-line no-console
+  console.error('[advaca-vue]', err, '\nat:', info)
+}
+
 app.component('PageHeader', PageHeader)
 app.component('PageHeaderAction', PageHeaderAction)
 app.component('ListItem', ListItem)
@@ -62,7 +68,8 @@ const auth = useAuthStore()
 
 setUnauthorizedHandler(() => {
   auth.clear()
-  if (router.currentRoute.value.path !== '/login') {
+  const path = router.currentRoute.value.path
+  if (path !== '/login' && !path.startsWith('/login')) {
     router.push({ path: '/login', query: { redirect: router.currentRoute.value.fullPath } })
   }
 })

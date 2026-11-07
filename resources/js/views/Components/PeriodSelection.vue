@@ -1,20 +1,24 @@
 <script setup>
 /**
- * PeriodSelection — mirrors the original UI's global period picker.
+ * PeriodSelection — the global academic-period picker.
  *
  * The untouched backend (App\Http\Middleware\UserConfig) answers 422
  * "choose_period_info" for every app API call outside its whitelist while the
- * logged-in user has no current academic period. The original frontend shows a
- * non-dismissable period selector right after login in that case; this modal
- * reproduces that behavior with the shadcn-vue design system.
+ * logged-in user has no current academic period. This picker therefore:
  *
- * Data source: GET /app/academic/periods (whitelisted by the middleware, so it
- * is callable without a selected period). Selection: POST
- * /app/academic/periods/{uuid}/select, then the user resource is re-fetched
- * with refresh_period=true so current_period_id propagates.
+ * - opens FORCED when the user has no current period and has not dismissed it,
+ * - can be opened any time from the header period button,
+ * - lists GET /app/academic/periods (whitelisted by the middleware) with the
+ *   default period pre-selected,
+ * - saves with POST /app/academic/periods/{uuid}/select (permission
+ *   period:change — the backend returns permissions ['*'] for admins, which
+ *   auth.can() honours) and re-fetches the user with refresh_period=true,
+ * - NEVER dead-ends: "Skip for now" (session) and "Do not ask again on this
+ *   device" are always available, plus a Retry button when loading fails.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { usePeriodStore } from '@/stores/period'
 import http from '@/lib/http'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,31 +28,39 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CalendarClock, Loader2 } from 'lucide-vue-next'
 
 const auth = useAuthStore()
+const periodStore = usePeriodStore()
 const periods = ref([])
 const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
 const selected = ref('')
+const dontAskChecked = ref(false)
 
-const open = computed(() => auth.needsPeriod)
+// dismissed when the visitor skipped for the session OR asked the device to
+// stop asking; the header button can always re-open the picker on demand.
+const dismissed = computed(() => periodStore.dontAsk || periodStore.skipped)
+const forced = computed(() => auth.needsPeriod && !dismissed.value)
+const open = computed(() => forced.value || periodStore.pickerOpen)
 
 const canManage = computed(() => {
-  // period:change permission gates POST periods/{uuid}/select; admins and
-  // super admins always can. Roles without it get their period auto-assigned
-  // at login (ValidateRole), so the picker rarely appears for them.
-  if (!auth.user) return false
-  if (auth.isSuperAdmin) return true
-  return (auth.user.permissions || []).includes('period:change')
+  // period:change gates POST periods/{uuid}/select; admins and super admins
+  // always can (auth.can already resolves the backend's ['*'] wildcard).
+  return auth.can('period:change')
 })
 
+const canClose = computed(() => !forced.value)
+
 async function load() {
-  if (!open.value || periods.value.length) return
+  if (!open.value) return
   loading.value = true
   error.value = ''
   try {
     const { data } = await http.get('/app/academic/periods', { params: { per_page: 100 } })
     const rows = Array.isArray(data) ? data : (data?.data || data?.records || [])
     periods.value = rows
+    const current = rows.find((p) => p.uuid === auth.currentPeriodId)
+      || rows.find((p) => p.id === auth.currentPeriodId)
+    if (current) periodStore.setCurrentName(current.name || current.code_number || '')
     const def = rows.find((p) => p.is_default)
     if (def) selected.value = def.uuid
   } catch (e) {
@@ -63,6 +75,10 @@ async function submit() {
   saving.value = true
   error.value = ''
   try {
+    // remember the display name for the header label before the reload wipes
+    // the in-memory store
+    const row = periods.value.find((p) => (p.uuid || p.id) === selected.value)
+    if (row) periodStore.setCurrentName(row.name || row.code_number || '')
     await auth.selectPeriod(selected.value)
     // full reload so every bootstrapped piece (config, page data) re-runs
     // against the newly selected period — same as the original UI.
@@ -77,12 +93,40 @@ async function submit() {
   }
 }
 
-onMounted(load)
+function skip() {
+  if (dontAskChecked.value) periodStore.skipDevice()
+  else periodStore.skipSession()
+}
+
+// while the picker is forced (no period + not dismissed) the dialog cannot be
+// closed by outside clicks / escape; when opened from the header it can.
+function onInteractOutside(e) {
+  if (!canClose.value) e.preventDefault()
+}
+function onEscapeKeyDown(e) {
+  if (!canClose.value) e.preventDefault()
+}
+
+// (re)load whenever the dialog opens
+watch(open, (v) => { if (v) load() })
+
+onMounted(() => {
+  load()
+  dontAskChecked.value = periodStore.dontAsk
+})
 </script>
 
 <template>
-  <Dialog :open="open">
-    <DialogContent class="sm:max-w-md" :hide-close="true" @interact-outside.prevent @escape-key-down.prevent>
+  <Dialog
+    :open="open"
+    @update:open="(v) => { if (!v && canClose) periodStore.closePicker() }"
+  >
+    <DialogContent
+      class="sm:max-w-md"
+      :hide-close="!canClose"
+      @interact-outside="onInteractOutside"
+      @escape-key-down="onEscapeKeyDown"
+    >
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <CalendarClock class="h-5 w-5 text-primary" />
@@ -103,18 +147,14 @@ onMounted(load)
           <AlertDescription>{{ error }}</AlertDescription>
         </Alert>
 
-        <div v-if="!canManage" class="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
-          Your account works within the period assigned by your administrator.
-        </div>
-
-        <div v-else class="max-h-72 space-y-1.5 overflow-y-auto pr-1">
+        <div v-if="canManage" class="max-h-72 space-y-1.5 overflow-y-auto pr-1">
           <button
             v-for="p in periods"
-            :key="p.uuid"
+            :key="p.uuid || p.id"
             type="button"
             class="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
-            :class="selected === p.uuid ? 'border-primary bg-primary/5' : ''"
-            @click="selected = p.uuid"
+            :class="selected === (p.uuid || p.id) ? 'border-primary bg-primary/5' : ''"
+            @click="selected = p.uuid || p.id"
           >
             <span class="font-medium">{{ p.name || p.code_number || p.uuid }}</span>
             <span class="text-xs text-muted-foreground">
@@ -126,10 +166,30 @@ onMounted(load)
           </p>
         </div>
 
-        <Button v-if="canManage" class="w-full" :disabled="!selected || saving" @click="submit">
-          <Loader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
-          Continue
-        </Button>
+        <div v-else class="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
+          Your account works within the period assigned by your administrator.
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <Button v-if="canManage" class="w-full" :disabled="!selected || saving" @click="submit">
+            <Loader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
+            Continue
+          </Button>
+
+          <div class="flex items-center gap-2">
+            <Button variant="ghost" class="flex-1" :disabled="saving" @click="skip">
+              Skip for now
+            </Button>
+            <Button v-if="error" variant="outline" class="flex-1" :disabled="loading" @click="load">
+              Retry
+            </Button>
+          </div>
+
+          <label class="flex items-center gap-2 text-xs text-muted-foreground">
+            <input v-model="dontAskChecked" type="checkbox" class="accent-primary" />
+            Do not ask again on this device (you can still pick a period from the header)
+          </label>
+        </div>
       </template>
     </DialogContent>
   </Dialog>

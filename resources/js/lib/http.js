@@ -1,11 +1,14 @@
 // Central axios instance talking to the untouched Laravel API.
 // The backend mounts every API route under the /api/v1 prefix
 // (RouteServiceProvider::VERSION_PATH) — e.g. POST /api/v1/auth/login.
+// The prefix is resolved at runtime so the SPA also works when Laravel
+// is served from a sub folder (e.g. http://localhost/advaca/public).
 import axios from 'axios'
 import Swal from 'sweetalert2'
+import { detectApiBase } from './base'
 
 const http = axios.create({
-  baseURL: '/api/v1',
+  baseURL: detectApiBase(),
   headers: {
     'X-Requested-With': 'XMLHttpRequest',
     Accept: 'application/json',
@@ -28,7 +31,10 @@ http.interceptors.response.use(
     const resp = error.response
     if (resp) {
       if (resp.status === 401) {
-        if (unauthorizedHandler) unauthorizedHandler()
+        // config.silent requests (e.g. the boot /auth/user probe) are handled
+        // by their caller — never trigger the global redirect from here, the
+        // router guard owns that decision.
+        if (unauthorizedHandler && !error.config?.silent) unauthorizedHandler()
       } else if (resp.status === 419) {
         window.location.reload()
       } else if (resp.status === 422) {

@@ -30,7 +30,11 @@ export const useAuthStore = defineStore('auth', {
     can: (s) => (permission) => {
       if (!s.user) return false
       if (s.user.is_super_admin) return true
-      return (s.user.permissions || []).includes(permission)
+      // the backend's User::user_permission accessor returns ['*'] for every
+      // user with the admin role — treat the wildcard as "all permissions"
+      const permissions = s.user.permissions || []
+      if (permissions.includes('*')) return true
+      return permissions.includes(permission)
     },
   },
   actions: {
@@ -39,20 +43,28 @@ export const useAuthStore = defineStore('auth', {
         // Without a bearer token there is nothing to restore: skip the
         // /auth/user boot call so a fresh visitor on /login never fires a
         // doomed request (avoids the 401 console noise before login).
-        this.promise = (this.token ? this.fetchUser() : Promise.resolve()).catch(() => {})
+        this.promise = (this.token ? this.fetchUser({ silent: true }) : Promise.resolve()).catch(() => {})
       }
       await this.promise
       this.ready = true
       return this.user
     },
-    async fetchUser() {
+    async fetchUser(opts = {}) {
       try {
         // refresh_period=true makes AuthUserResource resolve current_period_id
         // against the team's allowed periods (falls back to the default one).
-        const { data } = await http.get('/auth/user', { params: { refresh_period: true } })
+        // silent=true during boot: a rejected token must not fire the global
+        // 401 redirect — the router guard owns that decision.
+        const { data } = await http.get('/auth/user', {
+          params: { refresh_period: true },
+          silent: !!opts.silent,
+        })
         this.user = data
-      } catch {
+      } catch (e) {
         this.user = null
+        // a rejected stored token is dead — drop it so the next boot skips
+        // the probe and the guard sends the visitor to /login cleanly
+        if (e?.response?.status === 401 && this.token) this.clear()
       }
     },
     /**
@@ -82,11 +94,13 @@ export const useAuthStore = defineStore('auth', {
         // ignore
       }
       localStorage.removeItem('advaca-token')
+      localStorage.removeItem('advaca-period-name')
       delete http.defaults.headers.common.Authorization
       this.user = null
     },
     clear() {
       localStorage.removeItem('advaca-token')
+      localStorage.removeItem('advaca-period-name')
       delete http.defaults.headers.common.Authorization
       this.user = null
     },

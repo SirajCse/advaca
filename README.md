@@ -1,7 +1,7 @@
 # advaca-vue — Full Vue 3 SPA (shadcn-vue), rebuilt 1:1 to the original AdvAca UI
 
 This is a **complete, fully-workable Vue 3 single-page application** for the
-advaca (school & college management) Laravel backend. This version (v1.5.5.6)
+advaca (school & college management) Laravel backend. This version (v1.5.8.0)
 was **fully redesigned against the original AdvAca frontend** — the routes,
 sidebar, form fields, table columns, breadcrumbs and button layout are
 reconstructed **1:1 from the original application** (the `public/older-build`
@@ -15,6 +15,43 @@ FormRequests and ListServices.
 - vite entry: `@vite(['resources/js/app.js'])`
 - api base: `/api/v1` (RouteServiceProvider `VERSION_PATH = '/v1'`)
 - Sanctum bearer-token auth + CSRF meta tag
+
+## What changed in v1.5.8.0 — "every page 404" fix pack
+
+| Symptom | Root cause | Fixed by |
+|---|---|---|
+| **Every page shows "The page you could not be found. Go to Dashboard"** (the sidebar worked, the database is fine, the old source runs well on the same DB) | the real sidebar menu (`resources/js/spec/menu.js`, the file `AppNavigation` actually renders) was generated with a leading `/app` on **all 356 paths** (`/app/home`, `/app/academic/departments` …). `RouterLink` resolves `to` relative to the router base — which is already `…/app` — so every sidebar click produced `{base}/app/…` (double prefix) and fell into the catch-all 404 | ✅ all 356 menu paths stripped of the `/app` prefix; every path re-validated against the route table (0 unknown) |
+| secondary landmine: `config/menu.js` (unused by the UI) had 174 wrongly singularized paths (`/academic/department` vs the real `/academic/departments`) | generation artifact | ✅ all 174 paths corrected to the original app's URLs (kept in sync even though the file is currently unreferenced) |
+| sidebar clicks landed on `{base}/app/…` even on pages that "worked" when typed directly | same double-prefix root cause, invisible in deep-link tests | ✅ new E2E scenario **7b** drives a real in-app sidebar click and asserts the final URL has a single base |
+
+Verified end-to-end (mock backend + headless Chromium, **18/18 checks**): **menu walk over all 203 sidebar targets (zero 404s)**, in-app sidebar click, period picker (forced modal, list + Continue, session skip, device skip, reopen from header), teacher flow, catch-all 404 page, **WAMP sub-folder deployment shape**, select-period unblocks previously-422 pages, stale-token redirect.
+
+## What changed in v1.5.7.0 — academic period picker unblocked
+
+| Problem | Root cause | Fixed by |
+|---|---|---|
+| **"Select academic period" modal shows with nothing to do — the whole app is stuck** | the backend returns `permissions: ['*']` (wildcard) for every user with the admin role, but `auth.can('period:change')` only matched the literal name → the picker rendered the "assigned by your administrator" branch with **no list and no button** | ✅ `auth.can()` now resolves the `'*'` wildcard — admin-role users get the period list with the default period pre-selected and a **Continue** button |
+| no way out of the picker | the forced dialog had no skip path | ✅ **Skip for now** (this session) and **Do not ask again on this device** (localStorage) are always available — whitelisted pages (dashboard, departments, programs, sessions, periods, notifications) keep working, everything else surfaces the backend's own "choose a period" toast |
+| picker cannot be re-opened after skipping | only the forced mount existed | ✅ header **period button** (CalendarClock) shows the current period name — or an amber "Select period" warning while none is set — and re-opens the picker any time |
+| the picker dialog rendered twice on the dashboard | mounted in both the layout and the dashboard page | ✅ single mount in the user layout only |
+| loading failure left the modal dead | no retry | ✅ **Retry** button on load error, and the select flow persists the period name so the header label survives reloads |
+
+Verified end-to-end (mock backend + headless Chromium, **14/14 checks**): admin
+wildcard select flow, session skip, device skip, reopen from header,
+no-permission (teacher) skip, catch-all 404, stale-token redirect.
+
+## What changed in v1.5.6.0 — "only sidebar and header, blank page" fix pack
+
+| Symptom | Root cause | Fixed by |
+|---|---|---|
+| **Any URL shows only the sidebar and header, main area empty** | the route table had **no catch-all**: every URL that is not an exact route match rendered the shell with an empty `<main>` | ✅ `/:pathMatch(.*)*` → `NotFound` catch-all added to `routes.js` — unknown URLs now render the styled 404 page inside the app shell (guests are still bounced to `/login` by the guard) |
+| blank pages / API 401 on **WAMP sub-folder installs** (`http://localhost/advaca/public/app/...`) | router base and axios base were **hard-coded** (`createWebHistory('/app')`, `baseURL:'/api/v1'`) — correct only for domain-root vhosts | ✅ new `resources/js/lib/base.js` resolves **both** bases at runtime from the serving URL: `createWebHistory(detectAppBase())` + `baseURL: detectApiBase()`. Domain root (`/app` + `/api/v1`) and sub folder (`/advaca/public/app` + `/advaca/public/api/v1`) work with the same build |
+| `GET /api/v1/auth/user?refresh_period=true → 401` + redirect race on boot | a stale localStorage token fired the global 401 handler **while the router guard was still awaiting boot** | ✅ boot probe is now `silent`: no global redirect from the interceptor, the guard owns the redirect; the dead token is dropped from localStorage so the next load skips the probe |
+| one broken view could blank the whole page | no global error boundary | ✅ `app.config.errorHandler` logs the error and keeps the rest of the UI rendering |
+
+Verified end-to-end with a mock backend + headless Chromium: login → dashboard,
+CRUD list pages, unknown-URL 404 page, expired-token reload → clean `/login`
+redirect — **in both domain-root and sub-folder serving modes**.
 
 ## What changed in v1.5.5.6 — API alignment with the backend route table
 
@@ -88,6 +125,16 @@ npm run dev       # vite dev server with /api proxy to :8000
 
 Deploy exactly like the previous version: commit `resources/js` + configs,
 run `npm run build`, Laravel serves `public/build` through `app.blade.php`.
+
+**Works from any serving root** — a domain vhost (`https://advaca.test/app/...`)
+and a WAMP sub folder (`http://localhost/advaca/public/app/...`) both work with
+the same build; the SPA and the API base are detected at runtime
+(`resources/js/lib/base.js`).
+
+> Update checklist (important when copying over an older delivery): delete the
+> old `resources/js` folder first, then copy this one in, then `npm install &&
+> npm run build` and hard-refresh the browser (Ctrl+Shift+R). Mixing files from
+> two deliveries is the most common cause of stale-looking builds.
 
 ## Auth flow (Sanctum bearer)
 

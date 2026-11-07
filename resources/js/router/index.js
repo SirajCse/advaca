@@ -1,10 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import routes from './routes'
+import { detectAppBase } from '@/lib/base'
 import { useAuthStore } from '@/stores/auth'
 import { useConfigStore } from '@/stores/config'
 
 const router = createRouter({
-  history: createWebHistory('/app'),
+  // "/app" at a domain root, "/advaca/public/app" inside a sub folder —
+  // resolved from the URL the blade was served on, so both WAMP and vhost
+  // setups work with the same build.
+  history: createWebHistory(detectAppBase()),
   routes,
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) return savedPosition

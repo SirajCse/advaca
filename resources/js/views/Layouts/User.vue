@@ -3,21 +3,27 @@ import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import { useAuthStore } from '@/stores/auth'
+import { usePeriodStore } from '@/stores/period'
 import AppNavigation from '@/views/Components/AppNavigation.vue'
 import MobileSidebar from '@/views/Components/MobileSidebar.vue'
 import ProfileDropdown from '@/views/Components/ProfileDropdown.vue'
 import NotificationList from '@/views/Components/NotificationList.vue'
 import PeriodSelection from '@/views/Components/PeriodSelection.vue'
 import { Button } from '@/components/ui/button'
-import { Menu, Moon, Sun } from 'lucide-vue-next'
+import { CalendarClock, Menu, Moon, Sun } from 'lucide-vue-next'
 
 const theme = useThemeStore()
 const auth = useAuthStore()
+const periodStore = usePeriodStore()
 const router = useRouter()
 
 onMounted(() => theme.apply())
 
 const appName = computed(() => document.title.split(' - ')[0] || 'AdvAca')
+const periodLabel = computed(() => {
+  if (auth.needsPeriod) return 'Select period'
+  return periodStore.currentName || `Period #${auth.currentPeriodId}`
+})
 </script>
 
 <template>
@@ -36,6 +42,17 @@ const appName = computed(() => document.title.split(' - ')[0] || 'AdvAca')
               Welcome back, {{ auth.user?.profile?.name || auth.user?.username || 'User' }}
             </div>
             <div class="ml-auto flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                class="gap-1.5 text-muted-foreground"
+                :class="auth.needsPeriod ? 'border border-amber-400/60 bg-amber-500/10 text-amber-600 dark:text-amber-400' : ''"
+                title="Academic period"
+                @click="periodStore.openPicker()"
+              >
+                <CalendarClock class="h-4 w-4" />
+                <span class="hidden sm:inline">{{ periodLabel }}</span>
+              </Button>
               <Button variant="ghost" size="icon" @click="theme.toggle" :title="theme.dark ? 'Light mode' : 'Dark mode'">
                 <Sun v-if="theme.dark" class="h-5 w-5" />
                 <Moon v-else class="h-5 w-5" />

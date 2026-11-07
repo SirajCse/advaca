@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import PageHeader from '@/views/Components/PageHeader.vue'
-import PeriodSelection from '@/views/Components/PeriodSelection.vue'
 import { fmtDate } from '@/lib/helpers'
 
 const stats = ref(null)
@@ -36,9 +35,7 @@ const statEntries = () => Object.entries(stats.value || {}).slice(0, 8)
 
 <template>
   <div class="space-y-6">
-    <PageHeader title="Dashboard" :navs="[{ label: 'Home' }, { label: 'Dashboard' }]">
-      <PeriodSelection />
-    </PageHeader>
+    <PageHeader title="Dashboard" :navs="[{ label: 'Home' }, { label: 'Dashboard' }]" />
 
     <Alert v-if="error">
       <AlertTitle>Welcome to AdvAca</AlertTitle>
