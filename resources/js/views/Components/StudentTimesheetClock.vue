@@ -9,7 +9,7 @@ const busy = ref(false)
 async function clock(type) {
   busy.value = true
   try {
-    await http.post('/app/timesheets/clock', { type })
+    await http.post('/app/student/timesheet/clock', { type })
     active.value = type === 'in'
   } catch {}
   busy.value = false

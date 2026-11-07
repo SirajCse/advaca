@@ -6,14 +6,14 @@ export const chat = {
 }
 
 export const chatChatMessages = {
-  index: (chat, params) => http.get(`/app/chat//${chat}/messages`, { params }),
-  store: (chat, data) => http.post(`/app/chat//${chat}/messages`, data),
+  index: (chat, params) => http.get(`/app/chat/${chat}/messages`, { params }),
+  store: (chat, data) => http.post(`/app/chat/${chat}/messages`, data),
 }
 
-export const chatUsers = (params) => http.get('/app/chat//users', { params })
+export const chatUsers = (params) => http.get('/app/chat/users', { params })
 
-export const chatShow = (chat, params) => http.get(`/app/chat//${chat}`, params)
+export const chatShow = (chat, params) => http.get(`/app/chat/${chat}`, params)
 
-export const chatMarkAsRead = (chat, data) => http.post(`/app/chat//${chat}/read`, data)
+export const chatMarkAsRead = (chat, data) => http.post(`/app/chat/${chat}/read`, data)
 
-export const chatDestroy = (chat) => http.delete(`/app/chat//${chat}`, )
+export const chatDestroy = (chat) => http.delete(`/app/chat/${chat}`, )

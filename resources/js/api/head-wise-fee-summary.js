@@ -1,3 +1,3 @@
 import http from '@/lib/http'
 
-export const headWiseFeeSummaryInvoke = (params) => http.get('/app/head-wise-fee-summary', { params })
+export const headWiseFeeSummaryInvoke = (params) => http.get('/head-wise-fee-summary', { baseURL: '' }, { params })

@@ -9,7 +9,7 @@ const selected = ref('')
 
 onMounted(async () => {
   try {
-    const { data } = await http.get('/periods/pre-requisite')
+    const { data } = await http.get('/app/academic/periods/pre-requisite')
     options.value = pickPreReq(data, 'period')
     const current = data.current_period_id || data.period_id
     selected.value = String(current || '')

@@ -25,7 +25,7 @@ onMounted(async () => {
 
 async function loadBatches() {
   try {
-    const { data } = await http.get('/app/batches/pre-requisite', { params: { course: form.course } })
+    const { data } = await http.get('/app/academic/batches/pre-requisite', { params: { course: form.course } })
     batches.value = pickPreReq(data, 'batch')
   } catch {}
 }

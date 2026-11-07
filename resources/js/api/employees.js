@@ -68,7 +68,7 @@ export const employeesEmployeeRecords = {
 
 export const employeesEmployeeUser = {
   index: (employee, params) => http.get(`/app/employees/${employee}/user`, { params }),
-  update: (employee, uuid, data) => http.put(`/app/employees/${employee}/user/${uuid}`, data),
+  update: (employee, data) => http.patch(`/app/employees/${employee}/user`, data),
 }
 
 export const employeesEmployeeWorkShifts = {

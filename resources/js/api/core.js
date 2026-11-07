@@ -1,8 +1,8 @@
 import http from '@/lib/http'
 
 export const appSitePosts = {
-  index: (params) => http.get(`/app//app/site/posts`, { params }),
-  show: (uuid, params) => http.get(`/app//app/site/posts/${uuid}`, { params }),
+  index: (params) => http.get(`/app/site/posts`, { params }),
+  show: (uuid, params) => http.get(`/app/site/posts/${uuid}`, { params }),
 }
 
 export const config = {
@@ -103,7 +103,7 @@ export const teamsTeamRoles = {
 }
 
 export const userProfile = {
-  update: (uuid, data) => http.put(`/app/user/profile/${uuid}`, data),
+  update: (data) => http.post('/app/user/profile', data),
 }
 
 export const users = {
@@ -204,11 +204,11 @@ export const optionsReorderReorder = (data) => http.post('/app/options/reorder',
 
 export const customFieldsPreRequisite = (params) => http.get('/app/custom-fields/pre-requisite', { params })
 
-export const imageUpload = (data) => http.post('/app//images/upload', data)
+export const imageUpload = (data) => http.post('/app/images/upload', data)
 
-export const configPreRequisite = (params) => http.get('/app/config/pre-requisite', { params })
+export const configPreRequisite = (params) => http.get('/config/pre-requisite', { params })
 
-export const sitePageView = (slug, params) => http.get(`/app//app/pages/${slug}`, params)
+export const sitePageView = (slug, params) => http.get(`/app/pages/${slug}`, params)
 
 export const teamsExportInvoke = (params) => http.get('/app/teams/export', { params })
 

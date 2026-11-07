@@ -89,8 +89,35 @@ No Laravel file needs to change: `app.blade.php` already loads
 | "The POST method is not supported for route api/auth/login" | API called without the `/v1` prefix (fixed in this version) | Use this version's `lib/http.js` (`baseURL: '/api/v1'`) |
 | "Invalid credentials. Please try again." with correct credentials | Frontend sent `username` field but backend requires `email` (fixed in this version) | Use this version's `Login.vue` |
 | Logged in but bounced back to `/app/login` after refresh | Token not restored on boot (fixed in this version) | Use this version's `stores/auth.js` |
+| 401 in console on `/api/v1/auth/user` before logging in | Was the boot check firing without a token (fixed in this version — skipped when no token) | Use this version's `stores/auth.js` |
+| 401 on every endpoint right after login | Two-factor security is enabled in the backend config, but the v5.5.3 backend has the OTP notification job commented out — the code is never delivered | Disable `auth.enable_two_factor_security` in the backend config |
 | "Too many attempts" | Login is throttled to 5/min (`RouteServiceProvider`) | Wait 1 minute |
 | "These credentials do not match our records." | Wrong password for that username/email | Reset the password (`/app/password/reset`) |
+| 422 on list pages | Shown toast now carries the backend's real message (e.g. team/period not configured for the user) | Follow the message; check the user's team & academic period in the backend data |
+
+### Full API audit (v1.5.5.5)
+
+Every axios call in `resources/js/api/*.js` was cross-checked against the
+backend route table (2,700+ routes parsed from `routes/*.php` +
+`routes/modules/*.php`). Fixes applied in this version:
+
+- Module files calling doubled prefixes: `inventory/inventory`, `library/library`,
+  `mess/mess` → single module prefix.
+- `chat.js` double slashes (`/app/chat//...`) → `/app/chat/...`.
+- `core.js`/`app.js` doubled `/app/app/...` → `/app/...`.
+- `periods/pre-requisite` → `/app/academic/periods/pre-requisite`;
+  `batches/pre-requisite` → `/app/academic/batches/pre-requisite`;
+  `users/scope` → `/app/users/scope`; timesheet clocks → the real
+  `student/timesheet/clock` and `employee/attendance/timesheet/clock` routes.
+- Notifications → `mark-as-read` / `mark-all-as-read`; avatar removal →
+  `DELETE /app/user/profile/avatar`; profile update → `POST /app/user/profile`.
+- User sub-resource updates → `PATCH /app/{contacts|employees|guardians|students}/{id}/user`
+  (no trailing uuid, PATCH not PUT); student-wise subjects → `POST .../subject`;
+  fee-structure installments → `PATCH`; post image removal → `DELETE /app/post/images?image=`.
+- `config/pre-requisite` → `/config/pre-requisite` (api root, no `/app`).
+- Repo-owner diagnostic endpoints (`routes/custom.php`, web root, admin only)
+  and `/download/formats` are now called at their real absolute root paths
+  (`baseURL: ''`) — they exist outside `/api/v1`.
 
 ## Regenerating
 

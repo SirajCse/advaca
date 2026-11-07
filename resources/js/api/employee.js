@@ -141,7 +141,7 @@ export const employeeQualifications = {
   destroy: (uuid) => http.delete(`/app/employee/qualifications/${uuid}`),
 }
 
-export const employeePayrollSalaryTemplatesByIdRecalculateRecalculate = (salary_template, params) => http.get(`/app/employee/payroll/salary-templates/${salary_template}/recalculate`, params)
+export const employeePayrollSalaryTemplatesByIdRecalculateRecalculate = (salary_template, params) => http.get(`/employee/payroll/salary-templates/${salary_template}/recalculate`, { baseURL: '', params })
 
 export const employeeDepartmentsPreRequisite = (params) => http.get('/app/employee/departments/pre-requisite', { params })
 

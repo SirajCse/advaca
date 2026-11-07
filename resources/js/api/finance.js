@@ -58,7 +58,7 @@ export const financeFeeStructures = {
 
 export const financeFeeStructuresFeeStructureInstallments = {
   show: (fee_structure, uuid, params) => http.get(`/app/finance/fee-structures/${fee_structure}/installments/${uuid}`, { params }),
-  update: (fee_structure, uuid, data) => http.put(`/app/finance/fee-structures/${fee_structure}/installments/${uuid}`, data),
+  update: (fee_structure, uuid, data) => http.patch(`/app/finance/fee-structures/${fee_structure}/installments/${uuid}`, data),
   destroy: (fee_structure, uuid) => http.delete(`/app/finance/fee-structures/${fee_structure}/installments/${uuid}`),
 }
 

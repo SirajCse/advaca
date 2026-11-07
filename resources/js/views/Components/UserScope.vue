@@ -20,7 +20,7 @@ onMounted(async () => {
 
 async function saveScope() {
   try {
-    await http.post('/users/scope', {
+    await http.post('/app/users/scope', {
       scope: selectedPeriod.value ? 'all' : 'current_team',
       team_id: selectedTeam.value,
       period_id: selectedPeriod.value,

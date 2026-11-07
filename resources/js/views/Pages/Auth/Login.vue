@@ -37,7 +37,20 @@ async function submit() {
     }
     const data = await auth.login(payload)
     if (data.two_factor_security) {
-      Swal.fire({ icon: 'info', title: 'Verification required', text: 'Two factor security is enabled on your account.' })
+      // Backend sets a pending 2FA session flag: every authenticated
+      // endpoint answers 401 until POST /auth/security confirms the code.
+      // (Note: in the v5.5.3 backend the OTP notification job is commented
+      // out, so the code is never delivered — two factor security must be
+      // disabled in the backend config, or the notification job restored.)
+      Swal.fire({
+        icon: 'warning',
+        title: 'Two factor security is enabled',
+        text: 'This backend build cannot deliver the security code (the notification job is disabled). Please disable auth.enable_two_factor_security in the backend config or restore the code-delivery job.',
+        confirmButtonText: 'OK',
+      })
+      auth.clear()
+      processing.value = false
+      return
     }
     Swal.fire({ icon: 'success', title: 'Logged in', toast: true, position: 'top-end', timer: 2500, showConfirmButton: false })
     router.push(route.query.redirect && route.query.redirect !== '/' ? route.query.redirect : '/dashboard')

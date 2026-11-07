@@ -1,6 +1,6 @@
 {
   "name": "advaca-vue",
-  "version": "1.5.5.4",
+  "version": "1.5.5.5",
   "private": true,
   "type": "module",
   "description": "advaca - Full Vue 3 SPA (shadcn-vue) for the untouched Laravel backend",

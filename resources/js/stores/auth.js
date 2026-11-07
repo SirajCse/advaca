@@ -29,7 +29,10 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async init() {
       if (!this.promise) {
-        this.promise = this.fetchUser().catch(() => {})
+        // Without a bearer token there is nothing to restore: skip the
+        // /auth/user boot call so a fresh visitor on /login never fires a
+        // doomed request (avoids the 401 console noise before login).
+        this.promise = (this.token ? this.fetchUser() : Promise.resolve()).catch(() => {})
       }
       await this.promise
       this.ready = true

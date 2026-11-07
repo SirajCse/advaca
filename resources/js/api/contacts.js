@@ -10,7 +10,7 @@ export const contacts = {
 
 export const contactsContactUser = {
   index: (contact, params) => http.get(`/app/contacts/${contact}/user`, { params }),
-  update: (contact, uuid, data) => http.put(`/app/contacts/${contact}/user/${uuid}`, data),
+  update: (contact, data) => http.patch(`/app/contacts/${contact}/user`, data),
 }
 
 export const contactsConfirmUser = (contact, data) => http.post(`/app/contacts/${contact}/user/confirm`, data)

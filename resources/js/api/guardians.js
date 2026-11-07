@@ -9,7 +9,7 @@ export const guardians = {
 
 export const guardiansGuardianUser = {
   index: (guardian, params) => http.get(`/app/guardians/${guardian}/user`, { params }),
-  update: (guardian, uuid, data) => http.put(`/app/guardians/${guardian}/user/${uuid}`, data),
+  update: (guardian, data) => http.patch(`/app/guardians/${guardian}/user`, data),
 }
 
 export const guardiansConfirmUser = (guardian, data) => http.post(`/app/guardians/${guardian}/user/confirm`, data)

@@ -87,12 +87,12 @@ export const studentsStudentSiblings = {
 }
 
 export const studentsStudentSubject = {
-  update: (student, uuid, data) => http.put(`/app/students/${student}/subject/${uuid}`, data),
+  update: (student, data) => http.post(`/app/students/${student}/subject`, data),
 }
 
 export const studentsStudentUser = {
   index: (student, params) => http.get(`/app/students/${student}/user`, { params }),
-  update: (student, uuid, data) => http.put(`/app/students/${student}/user/${uuid}`, data),
+  update: (student, data) => http.patch(`/app/students/${student}/user`, data),
 }
 
 export const studentsConfirmUser = (student, data) => http.post(`/app/students/${student}/user/confirm`, data)

@@ -1,3 +1,3 @@
 import http from '@/lib/http'
 
-export const inchargeEndInvoke = (params) => http.get('/app/incharge-end', { params })
+export const inchargeEndInvoke = (params) => http.get('/incharge-end', { baseURL: '' }, { params })

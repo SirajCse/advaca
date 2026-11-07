@@ -1,3 +1,3 @@
 import http from '@/lib/http'
 
-export const feePaymentMismatchInvoke = (params) => http.get('/app/fee-payment-mismatch', { params })
+export const feePaymentMismatchInvoke = (params) => http.get('/fee-payment-mismatch', { baseURL: '' }, { params })
