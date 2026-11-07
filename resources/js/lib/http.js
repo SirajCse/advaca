@@ -1,9 +1,11 @@
-// Central axios instance talking to the untouched Laravel API (/api)
+// Central axios instance talking to the untouched Laravel API.
+// The backend mounts every API route under the /api/v1 prefix
+// (RouteServiceProvider::VERSION_PATH) — e.g. POST /api/v1/auth/login.
 import axios from 'axios'
 import Swal from 'sweetalert2'
 
 const http = axios.create({
-  baseURL: '/api',
+  baseURL: '/api/v1',
   headers: {
     'X-Requested-With': 'XMLHttpRequest',
     Accept: 'application/json',

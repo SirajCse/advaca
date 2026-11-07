@@ -10,7 +10,9 @@ components and pages** built on the **shadcn-vue** design system.
 
 - blade root element: `<div id="root">`
 - vite entry: `@vite(['resources/js/app.js'])`
-- api base: `/api` (Sanctum cookie auth + CSRF meta tag)
+- api base: `/api/v1` (RouteServiceProvider `VERSION_PATH = '/v1'`; every
+  endpoint lives under `/api/v1/...`, e.g. `POST /api/v1/auth/login`)
+- Sanctum bearer-token auth + CSRF meta tag
 
 ## What is inside
 
@@ -60,7 +62,12 @@ No Laravel file needs to change: `app.blade.php` already loads
 
 ### Auth flow
 
-- `POST /api/auth/login` with payload `{ email, password, remember_me, device_name: 'web' }`.
+- `POST /api/v1/auth/login` with payload `{ email, password, remember_me, device_name: 'web' }`.
+  - **Base path matters**: the backend registers every API route under
+    `/api/v1` (`RouteServiceProvider::VERSION_PATH = '/v1'`). Calling
+    `/api/auth/login` (without `/v1`) makes Laravel answer
+    *"The POST method is not supported for route api/auth/login. Supported
+    methods: GET, HEAD."* — the axios base is therefore `/api/v1`.
   - The backend `LoginRequest` requires the **`email`** field — it accepts a
     **username or an email address** in it (`getCredentials()` in
     `app/Actions/Auth/Login.php` detects which one it is).
@@ -70,7 +77,7 @@ No Laravel file needs to change: `app.blade.php` already loads
 - The token is stored in `localStorage` (`advaca-token`) and re-applied to the
   axios `Authorization` header on every page load (`stores/auth.js`), so
   refreshing the page keeps you signed in.
-- `GET /api/auth/user` (Bearer token) hydrates the user (`stores/auth.js`).
+- `GET /api/v1/auth/user` (Bearer token) hydrates the user (`stores/auth.js`).
 - 401 responses clear the token and redirect to `/app/login`.
 - 419 (CSRF expiry) reloads the page; 429 (login throttle, 5/min) shows the
   backend's "too many attempts" message.
@@ -79,6 +86,7 @@ No Laravel file needs to change: `app.blade.php` already loads
 
 | Symptom | Cause | Fix |
 |---|---|---|
+| "The POST method is not supported for route api/auth/login" | API called without the `/v1` prefix (fixed in this version) | Use this version's `lib/http.js` (`baseURL: '/api/v1'`) |
 | "Invalid credentials. Please try again." with correct credentials | Frontend sent `username` field but backend requires `email` (fixed in this version) | Use this version's `Login.vue` |
 | Logged in but bounced back to `/app/login` after refresh | Token not restored on boot (fixed in this version) | Use this version's `stores/auth.js` |
 | "Too many attempts" | Login is throttled to 5/min (`RouteServiceProvider`) | Wait 1 minute |
