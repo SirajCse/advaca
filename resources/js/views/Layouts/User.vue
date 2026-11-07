@@ -7,6 +7,7 @@ import AppNavigation from '@/views/Components/AppNavigation.vue'
 import MobileSidebar from '@/views/Components/MobileSidebar.vue'
 import ProfileDropdown from '@/views/Components/ProfileDropdown.vue'
 import NotificationList from '@/views/Components/NotificationList.vue'
+import PeriodSelection from '@/views/Components/PeriodSelection.vue'
 import { Button } from '@/components/ui/button'
 import { Menu, Moon, Sun } from 'lucide-vue-next'
 
@@ -54,5 +55,9 @@ const appName = computed(() => document.title.split(' - ')[0] || 'AdvAca')
         </footer>
       </div>
     </div>
+
+    <!-- backend rejects every non-whitelisted API call while no academic
+         period is selected (UserConfig middleware 422) — force the picker -->
+    <PeriodSelection />
   </div>
 </template>

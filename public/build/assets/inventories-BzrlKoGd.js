@@ -1,1 +1,0 @@
-import{Q as t}from"./app-BAurCMjd.js";const n={index:e=>t.get("/app/inventories",{params:e}),show:(e,p)=>t.get(`/app/inventories/${e}`,{params:p}),store:e=>t.post("/app/inventories",e),update:(e,p)=>t.put(`/app/inventories/${e}`,p),destroy:e=>t.delete(`/app/inventories/${e}`)};export{n as i};

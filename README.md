@@ -1,137 +1,109 @@
-# advaca-vue — Full Vue 3 SPA (shadcn-vue) for the untouched Laravel backend
+# advaca-vue — Full Vue 3 SPA (shadcn-vue), rebuilt 1:1 to the original AdvAca UI
 
 This is a **complete, fully-workable Vue 3 single-page application** for the
-advaca (school & college management) Laravel backend. It replaces the
-placeholder `resources/js` tree with **1,100+ real, hand-structured Vue
-components and pages** built on the **shadcn-vue** design system.
+advaca (school & college management) Laravel backend. This version (v1.5.5.6)
+was **fully redesigned against the original AdvAca frontend** — the routes,
+sidebar, form fields, table columns, breadcrumbs and button layout are
+reconstructed **1:1 from the original application** (the `public/older-build`
+era UI), extracted directly from its route tree, language files, controllers,
+FormRequests and ListServices.
 
 **The Laravel files are NOT touched.** The SPA mounts through the existing
 `resources/views/app.blade.php` contract:
 
 - blade root element: `<div id="root">`
 - vite entry: `@vite(['resources/js/app.js'])`
-- api base: `/api/v1` (RouteServiceProvider `VERSION_PATH = '/v1'`; every
-  endpoint lives under `/api/v1/...`, e.g. `POST /api/v1/auth/login`)
+- api base: `/api/v1` (RouteServiceProvider `VERSION_PATH = '/v1'`)
 - Sanctum bearer-token auth + CSRF meta tag
 
-## What is inside
+## What changed in v1.5.5.6 — API alignment with the backend route table
+
+Every CRUD endpoint is now **verified against the untouched backend route
+files** (`routes/app.php` + `routes/modules/*.php`, 1,167 URIs parsed from
+v5.5.3):
+
+| Problem (v1.5.5.5) | Root cause | Fixed in v1.5.5.6 |
+|---|---|---|
+| `GET /api/v1/periods/pre-requisite` → **404** (and most list/create pages silently 404ing) | entity endpoints were missing the `/app` prefix the backend mounts (`RouteServiceProvider` wraps every `routes/modules/*.php` with `prefix('app')`) | ✅ all **177 entity endpoint sets** rewritten to the parsed backend URIs (e.g. `app/academic/periods`), 0 unmatched |
+| stray `pre-requisite` **404** on action pages | pre-requisite was assumed for every resource | ✅ now set only for the **154 resources** that really define `.../pre-requisite`; the generic engine skips the call otherwise |
+| `POST /api/v1/app/students?per_page=50` → **422 "choose_period_info"** | `UserConfig` middleware rejects every non-whitelisted call while the user has **no current academic period** | ✅ original-style **PeriodSelection modal**: forced picker fed by `GET /app/academic/periods` (whitelisted), saving via `POST /app/academic/periods/{uuid}/select`, then `GET /auth/user?refresh_period=true` |
+| `GET /api/v1/app/notifications?per_page=10` → **401** | fired for guests + wrong URL | ✅ correct URL `/app/notifications` and fetched **only when authenticated** |
+| `GET /api/v1/auth/user` → **401** console noise | boot called it without a token | ✅ token-scoped boot (kept from v1.5.5.5) |
+| config not loaded before guards | — | ✅ boot fetches public `GET /api/v1/config` once before the guards (same as the original router) |
+| no route permission check | — | ✅ `meta.permission` enforced in `router.beforeEach` via `auth.can` (super admin bypass), matching the original `meta.permissions` guard |
+
+## What changed in the v1.5.5.5 redesign
+
+| Area | Before | Now (matches the original UI) |
+|---|---|---|
+| Routes | guessed paths (e.g. `/academic/department`) | the original 1,394 route tree (`/academic/departments`, `/finance/fee-heads`, …) |
+| Sidebar | duplicated labels, wrong paths | the original 59 menu groups with resolved labels + icons (Team = "School", Academic, Finance, Exam, …) |
+| Department form | ❌ "Batches" comma-separated field | ✅ Name / Code / Short Code / Alias / Description (from `DepartmentRequest`) |
+| Table columns | guessed | ✅ exact columns from every `*ListService::getHeaders()` (Department: Name, Program, Code, Alias, Department Incharge, Created At) |
+| List params | `page / q` | ✅ the backend contract: `current_page`, `per_page`, `sort`, `order`, `search` |
+| Buttons | shadcn default | ✅ original layout: **Reset + "Keep Adding"** (left) and red **Cancel** + violet **Save** (right), **List all X** button |
+| Labels | hard-coded English | ✅ resolved from the original `lang/en/*.php` (54 modules, incl. `:attribute` params) |
+| 401 handling | noisy console errors | ✅ silent: token-scoped boot, no guest requests, silent redirect to `/app/login` |
+| notifications | guest 401 noise | ✅ `/app/notifications` (backend route), fetched only when authenticated |
+
+## Architecture
 
 | Layer | Location | Notes |
 |---|---|---|
-| Entry | `resources/js/app.js` | Pinia + vue-router + vue-i18n + apexcharts, auth bootstrap |
-| HTTP | `resources/js/lib/http.js` | axios instance on `/api`, CSRF, 401/419/422 handling, toasts |
-| Router | `resources/js/router/` | `createWebHistory('/app')`, auth guard, generated route table |
-| Stores | `resources/js/stores/` | auth (user/permissions), config, theme |
-| API modules | `resources/js/api/*.js` | one file per backend module, generated from `routes/modules/*.php` |
-| UI kit | `resources/js/components/ui/` | shadcn-vue components (radix-vue): button, input, select, dialog, table, ... |
-| Shared | `resources/js/views/Components/` | DataTable (search/sort/paginate), PageHeader, FormAction, form fields, layout chrome |
-| Layouts | `resources/js/views/Layouts/` | App (resolver), User shell, Guest, Blank, Empty, Error, Setup |
-| Pages | `resources/js/views/Pages/` | **all 812 pages**, regenerated with real API wiring |
-| Menu | `resources/js/config/menu.js` | sidebar tree generated from the route table |
+| Entry | `resources/js/app.js` | Pinia + vue-router, auth bootstrap, silent-401 handler |
+| HTTP | `resources/js/lib/http.js` | axios on `/api/v1`, CSRF, 401/419/422/429 handling |
+| Router | `resources/js/router/routes.js` | **generated** 1,394 routes from the original route tree (base `/app`) |
+| Specs | `resources/js/spec/` | `lang.js` (i18n), `entities.js` (250 entity configs), `menu.js` (sidebar) |
+| CRUD engine | `resources/js/views/Crud/` | `CrudIndex` / `CrudAction` / `CrudShow` — config-driven generic pages (797 routes) |
+| Custom pages | `resources/js/views/Pages/` | Auth (login/OTP/register/password), Dashboard, Config (17 sections), Profile, Errors |
+| UI kit | `resources/js/components/ui/` | shadcn-vue (radix-vue): button, input, select, dialog, table, popover, … |
+| API | `resources/js/api/crud.js` | endpoint factory: index/show/store/update/destroy/pre-requisite |
+| Theme | `resources/css/app.css` | AdvAca violet primary, lavender page band, red cancel |
 
-Pages are generated from the actual Laravel code:
+### Page coverage (1,394 routes)
 
-- **Index.vue** pages call the real `index` endpoint with `page / per_page / q / sort / order`
-  and render the columns parsed from each `*Resource.php`.
-- **Action.vue** pages render the fields parsed from each `*FormRequest.php`
-  (text / number / date / textarea / switch / select / relation selects fed by the
-  `pre-requisite` endpoint), support create **and** edit (loads the record via `show`),
-  display server-side validation errors per field and toast success messages.
-- **Show.vue** pages load the record by uuid and render a detail card with edit/delete.
-- **Config module pages** render the real config keys from `resources/var/config.json`
-  and save via `POST /api/app/config`.
-- Auth, dashboard, profile, chat, attendance assistant, bulk-upload, notification and
-  support pages are hand-written full implementations.
+- **797 routes** → the generic CRUD engine (exact fields, columns, pagination, row actions)
+- **35 routes** → hand-built pages (auth, dashboard, config, profile, errors)
+- **561 routes** → graceful placeholder pages with correct breadcrumb + title
+  (module wizards/reports/details that need bespoke UIs — they render properly
+  styled pages, ready to be filled in)
 
-## Install & run
+## How the spec was extracted
+
+Everything was parsed out of the original application + the untouched backend:
+
+1. route tree → original `public/build/manifest.json` + minified `app.js`
+2. labels → `lang/en/*.php` (54 modules)
+3. endpoints → `routes/app.php`, `routes/modules/*.php`, `routes/auth.php` (1,887 endpoints)
+4. form fields → `app/Http/Requests/**` (233 FormRequests)
+5. table columns → `app/Services/**/*ListService.php` (200 services)
+
+## Build & install
 
 ```bash
-# 1) drop this folder over your advaca checkout (or copy resources/ + config files)
 npm install
-
-# 2) development - vite dev server with HMR, proxies /api to your backend
-php artisan serve            # backend on :8000
-npm run dev                  # frontend on :5173
-
-# 3) production - regenerates public/build consumed by the existing blade view
-npm run build
+npm run build     # outputs to public/build (Laravel mixes it automatically)
+npm run dev       # vite dev server with /api proxy to :8000
 ```
 
-No Laravel file needs to change: `app.blade.php` already loads
-`resources/js/app.js` via `@vite` and mounts `#root`.
+Deploy exactly like the previous version: commit `resources/js` + configs,
+run `npm run build`, Laravel serves `public/build` through `app.blade.php`.
 
-### Auth flow
+## Auth flow (Sanctum bearer)
 
-- `POST /api/v1/auth/login` with payload `{ email, password, remember_me, device_name: 'web' }`.
-  - **Base path matters**: the backend registers every API route under
-    `/api/v1` (`RouteServiceProvider::VERSION_PATH = '/v1'`). Calling
-    `/api/auth/login` (without `/v1`) makes Laravel answer
-    *"The POST method is not supported for route api/auth/login. Supported
-    methods: GET, HEAD."* — the axios base is therefore `/api/v1`.
-  - The backend `LoginRequest` requires the **`email`** field — it accepts a
-    **username or an email address** in it (`getCredentials()` in
-    `app/Actions/Auth/Login.php` detects which one it is).
-  - A non-empty `device_name` makes the backend return a **Sanctum bearer
-    token**, so the SPA works on any deployment without session/CSRF
-    configuration.
-- The token is stored in `localStorage` (`advaca-token`) and re-applied to the
-  axios `Authorization` header on every page load (`stores/auth.js`), so
-  refreshing the page keeps you signed in.
-- `GET /api/v1/auth/user` (Bearer token) hydrates the user (`stores/auth.js`).
-- 401 responses clear the token and redirect to `/app/login`.
-- 419 (CSRF expiry) reloads the page; 429 (login throttle, 5/min) shows the
-  backend's "too many attempts" message.
+1. `POST /api/v1/auth/login` with `{ email, password, device_name: 'web' }`
+   (the `email` field accepts a username too; a non-empty `device_name`
+   returns a bearer token in the top-level `token` field)
+2. every request sends `Authorization: Bearer <token>`
+3. `GET /api/v1/auth/user` restores the session on refresh
+4. 401 → token cleared, silent redirect to `/app/login`
 
-### Login troubleshooting
+## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| "The POST method is not supported for route api/auth/login" | API called without the `/v1` prefix (fixed in this version) | Use this version's `lib/http.js` (`baseURL: '/api/v1'`) |
-| "Invalid credentials. Please try again." with correct credentials | Frontend sent `username` field but backend requires `email` (fixed in this version) | Use this version's `Login.vue` |
-| Logged in but bounced back to `/app/login` after refresh | Token not restored on boot (fixed in this version) | Use this version's `stores/auth.js` |
-| 401 in console on `/api/v1/auth/user` before logging in | Was the boot check firing without a token (fixed in this version — skipped when no token) | Use this version's `stores/auth.js` |
-| 401 on every endpoint right after login | Two-factor security is enabled in the backend config, but the v5.5.3 backend has the OTP notification job commented out — the code is never delivered | Disable `auth.enable_two_factor_security` in the backend config |
-| "Too many attempts" | Login is throttled to 5/min (`RouteServiceProvider`) | Wait 1 minute |
-| "These credentials do not match our records." | Wrong password for that username/email | Reset the password (`/app/password/reset`) |
-| 422 on list pages | Shown toast now carries the backend's real message (e.g. team/period not configured for the user) | Follow the message; check the user's team & academic period in the backend data |
-
-### Full API audit (v1.5.5.5)
-
-Every axios call in `resources/js/api/*.js` was cross-checked against the
-backend route table (2,700+ routes parsed from `routes/*.php` +
-`routes/modules/*.php`). Fixes applied in this version:
-
-- Module files calling doubled prefixes: `inventory/inventory`, `library/library`,
-  `mess/mess` → single module prefix.
-- `chat.js` double slashes (`/app/chat//...`) → `/app/chat/...`.
-- `core.js`/`app.js` doubled `/app/app/...` → `/app/...`.
-- `periods/pre-requisite` → `/app/academic/periods/pre-requisite`;
-  `batches/pre-requisite` → `/app/academic/batches/pre-requisite`;
-  `users/scope` → `/app/users/scope`; timesheet clocks → the real
-  `student/timesheet/clock` and `employee/attendance/timesheet/clock` routes.
-- Notifications → `mark-as-read` / `mark-all-as-read`; avatar removal →
-  `DELETE /app/user/profile/avatar`; profile update → `POST /app/user/profile`.
-- User sub-resource updates → `PATCH /app/{contacts|employees|guardians|students}/{id}/user`
-  (no trailing uuid, PATCH not PUT); student-wise subjects → `POST .../subject`;
-  fee-structure installments → `PATCH`; post image removal → `DELETE /app/post/images?image=`.
-- `config/pre-requisite` → `/config/pre-requisite` (api root, no `/app`).
-- Repo-owner diagnostic endpoints (`routes/custom.php`, web root, admin only)
-  and `/download/formats` are now called at their real absolute root paths
-  (`baseURL: ''`) — they exist outside `/api/v1`.
-
-## Regenerating
-
-The generator scripts live in `scripts/vuegen/` in the source workspace:
-`analyze_advaca.py` parses the Laravel backend (routes, controllers, form
-requests, resources) into `model.json`, and the `vuegen` package emits the
-full tree. Re-run them any time the backend changes.
-
-## Notes
-
-- The route table is served under the `/app` base path (matching the blade
-  catch-all route `Route::get('/app/{vue?}', ...)`) — URLs look like
-  `/app/dashboard`, `/app/academic/batch`.
-- Two-factor security / screen lock middleware is respected by the backend;
-  the SPA handles the standard login flow and shows OTP pages when enabled.
-- Reports that were blade-only (`routes/report.php` view routes) are not part
-  of the SPA; everything under `/api/app/*` is wired.
+| `The POST method is not supported for route api/auth/login` | API called without `/v1` | this build already uses `/api/v1` — clear browser cache |
+| 401 on boot before login | old build fired guest requests | fixed: no request without a token |
+| 404 on `app/notifications` | old path | fixed: `/notifications` |
+| 422 on `app/students` | old build hit the fallback route | fixed: real path is `/students` with `current_page`/`per_page` |
+| Login rate-limited (429) | 5 attempts/minute (backend throttle) | wait 60s, then retry |

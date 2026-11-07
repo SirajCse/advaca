@@ -82,7 +82,7 @@ async function submit() {
             <Switch v-model="form.remember_me" />
             Remember me
           </label>
-          <RouterLink to="/password/reset" class="text-sm text-primary hover:underline">Forgot password?</RouterLink>
+          <RouterLink to="/password" class="text-sm text-primary hover:underline">Forgot password?</RouterLink>
         </div>
         <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
         <Button type="submit" class="w-full" :disabled="processing">{{ processing ? 'Signing in…' : 'Sign in' }}</Button>

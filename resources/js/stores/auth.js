@@ -20,6 +20,13 @@ export const useAuthStore = defineStore('auth', {
     isLoggedIn: (s) => !!s.user,
     isSuperAdmin: (s) => !!s.user?.is_super_admin,
     roles: (s) => s.user?.roles || [],
+    /**
+     * The backend UserConfig middleware rejects (422 "choose_period_info")
+     * every app request outside its whitelist while the user has no current
+     * academic period — expose it so layouts can force the picker.
+     */
+    currentPeriodId: (s) => s.user?.current_period_id ?? null,
+    needsPeriod: (s) => !!s.user && (s.user.current_period_id ?? null) === null,
     can: (s) => (permission) => {
       if (!s.user) return false
       if (s.user.is_super_admin) return true
@@ -40,11 +47,23 @@ export const useAuthStore = defineStore('auth', {
     },
     async fetchUser() {
       try {
-        const { data } = await http.get('/auth/user')
+        // refresh_period=true makes AuthUserResource resolve current_period_id
+        // against the team's allowed periods (falls back to the default one).
+        const { data } = await http.get('/auth/user', { params: { refresh_period: true } })
         this.user = data
       } catch {
         this.user = null
       }
+    },
+    /**
+     * Select the working academic period (mirrors the original UI's
+     * PeriodSelection flow): POST /app/academic/periods/{uuid}/select then
+     * re-fetch the user so current_period_id updates everywhere.
+     */
+    async selectPeriod(uuid) {
+      await http.post(`/app/academic/periods/${uuid}/select`, {})
+      await this.fetchUser()
+      return this.user
     },
     async login(payload) {
       const { data } = await http.post('/auth/login', payload)

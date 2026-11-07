@@ -1,1 +1,0 @@
-import{Q as p}from"./app-BAurCMjd.js";const o={index:t=>p.get("/app/contacts",{params:t}),show:(t,a)=>p.get(`/app/contacts/${t}`,{params:a}),store:t=>p.post("/app/contacts",t),update:(t,a)=>p.put(`/app/contacts/${t}`,a),destroy:t=>p.delete(`/app/contacts/${t}`)};export{o as c};

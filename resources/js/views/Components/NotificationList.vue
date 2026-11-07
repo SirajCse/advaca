@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { getNotifications } from '@/api/auth'
+import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -11,9 +12,12 @@ import { Bell } from 'lucide-vue-next'
 const items = ref([])
 
 onMounted(async () => {
+  // never fire for guests — avoids the pre-login 401 noise
+  const auth = useAuthStore()
+  if (!auth.isLoggedIn) return
   try {
-    const { data } = await getNotifications({ per_page: 10 })
-    items.value = data?.data || []
+    const resp = await getNotifications({ per_page: 10 })
+    items.value = resp?.data?.data || resp?.data || []
   } catch {
     items.value = []
   }
