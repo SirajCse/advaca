@@ -1,16 +1,28 @@
 {
+  "node_modules/quill/quill.js": {
+    "file": "assets/quill-DqwfHFRb.js",
+    "name": "quill",
+    "src": "node_modules/quill/quill.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
   "resources/css/app.css": {
-    "file": "assets/app-Boeb_IHT.css",
+    "file": "assets/app--TsbsDBV.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-DYuMBNSN.js",
+    "file": "assets/app-BiyNNSFL.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
+    "dynamicImports": [
+      "node_modules/quill/quill.js"
+    ],
     "css": [
-      "assets/app-Boeb_IHT.css"
+      "assets/app-B6wCMDY5.css"
     ]
   }
 }

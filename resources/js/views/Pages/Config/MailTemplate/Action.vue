@@ -16,17 +16,15 @@
         :back-to="{ name: 'config.mail-template.index' }"
         @submit="submit"
       >
-                <FormRelationSelect
-          v-model="form.subject"
-          :options="relationOptions.subject"
-          label="Subject"
-          :required="true"
-          :error="errors.subject ? String(errors.subject[0] || errors.subject) : ''"
-        />
+                <div class="space-y-1.5">
+          <Label for="subject">Subject<span v-if="true" class="text-destructive"> *</span></Label>
+          <Textarea id="subject" v-model="form.subject" :rows="2" />
+          <p v-if="errors.subject" class="text-xs text-destructive">{{ String(errors.subject[0] || errors.subject) }}</p>
+        </div>
 
         <div class="space-y-1.5">
           <Label for="content">Content<span v-if="true" class="text-destructive"> *</span></Label>
-          <Textarea id="content" v-model="form.content" :rows="4" />
+          <RichEditor id="content" v-model="form.content" placeholder="Write mail body here..." />
           <p v-if="errors.content" class="text-xs text-destructive">{{ String(errors.content[0] || errors.content) }}</p>
         </div>
 
@@ -51,6 +49,7 @@ import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 import FormAction from '@/views/Components/FormAction.vue'
 import FormSelect from '@/views/Components/FormSelect.vue'
 import FormRelationSelect from '@/views/Components/FormRelationSelect.vue'
+import RichEditor from '@/views/Components/RichEditor.vue'
 import FormArrayInput from '@/views/Components/FormArrayInput.vue'
 import { pickPreReq } from '@/lib/helpers'
 import { configMailTemplates } from '@/api/core'

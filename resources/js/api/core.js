@@ -206,6 +206,12 @@ export const customFieldsPreRequisite = (params) => http.get('/app/custom-fields
 
 export const imageUpload = (data) => http.post('/app/images/upload', data)
 
+/**
+ * Global config pre-requisite. DANGER: the untouched v5.5.3 backend runs
+ * snake_case($request->type) — calling this WITHOUT `params.type` throws a
+ * PHP TypeError → HTTP 500. ALWAYS pass a type list, e.g.
+ *   configPreRequisite({ type: 'dateFormats,timeFormats,locales,timezones' })
+ */
 export const configPreRequisite = (params) => http.get('/config/pre-requisite', { params })
 
 export const sitePageView = (slug, params) => http.get(`/app/pages/${slug}`, params)

@@ -11,6 +11,10 @@
       </template>
     </PageHeader>
 
+    <Alert v-if="listError" variant="destructive">
+      <AlertDescription>{{ listError }}</AlertDescription>
+    </Alert>
+
     <ParentTransition :visibility="initialized">
       <Card class="rounded-lg border shadow-sm">
         <!-- toolbar: search -->
@@ -146,6 +150,7 @@ import { computed, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
 import { Card, CardContent } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -186,6 +191,7 @@ const hasActions = computed(() => !!(createRoute.value || editRoute.value || sho
 
 const initialized = ref(false)
 const loading = ref(false)
+const listError = ref('')
 const rows = ref([])
 const total = ref(0)
 const currentPage = ref(1)
@@ -231,8 +237,12 @@ async function fetchRows() {
     total.value = Number(norm.meta.total ?? norm.rows.length)
     lastPage.value = Number(norm.meta.last_page ?? 1)
     currentPage.value = Number(norm.meta.current_page ?? currentPage.value)
-  } catch {
+    listError.value = ''
+  } catch (e) {
     rows.value = []
+    const status = e?.response?.status
+    listError.value = e?.response?.data?.message
+      || (status ? `The list could not be loaded (HTTP ${status}). Please retry.` : 'The list could not be loaded. Please retry.')
   } finally {
     loading.value = false
     initialized.value = true

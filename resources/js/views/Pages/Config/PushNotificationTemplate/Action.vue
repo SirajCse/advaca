@@ -16,13 +16,11 @@
         :back-to="{ name: 'config.push-notification-template.index' }"
         @submit="submit"
       >
-                <FormRelationSelect
-          v-model="form.subject"
-          :options="relationOptions.subject"
-          label="Subject"
-          :required="true"
-          :error="errors.subject ? String(errors.subject[0] || errors.subject) : ''"
-        />
+                <div class="space-y-1.5">
+          <Label for="subject">Subject<span v-if="true" class="text-destructive"> *</span></Label>
+          <Input id="subject" v-model="form.subject" type="text" :maxlength="100" />
+          <p v-if="errors.subject" class="text-xs text-destructive">{{ String(errors.subject[0] || errors.subject) }}</p>
+        </div>
 
         <div class="space-y-1.5">
           <Label for="content">Content<span v-if="true" class="text-destructive"> *</span></Label>

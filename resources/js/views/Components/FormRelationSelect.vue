@@ -20,9 +20,14 @@ const props = defineProps({
   placeholder: { type: String, default: 'Select...' },
   error: { type: [String, Array], default: '' },
   name: { type: String, default: '' },
+  // async option loading state — the parent (CrudAction) reports whether the
+  // pre-requisite request is in flight / failed so a select never shows a
+  // silent "No options available" while the real cause is a 401/403/422.
+  loading: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'retry'])
 
 // Resolve the option list for this field from the whole pre-requisite payload.
 const resolved = computed(() => {
@@ -35,18 +40,35 @@ function findOptions(payload) {
   if (!fname || !payload || typeof payload !== 'object') return []
   // Common shapes: { selects: { fname: [...] } }, { fname: [...] }, { lists: {...} }
   const groups = [payload.selects, payload.lists, payload.options, payload]
+  // The backend mixes plural/singular keys against the field name:
+  //   field session  -> payload.sessions   (PeriodService preRequisite)
+  //   field seeders  -> payload.seeder     (PeriodService preRequisite, singular!)
+  //   field department -> payload.departments (ProgramService preRequisite)
+  // NON-empty arrays win over empty ones (config/pre-requisite may carry
+  // empty arrays that must not shadow real option lists).
+  const plural = fname.endsWith('s') ? fname : fname + 's'
+  const singular = fname.endsWith('s') ? fname.slice(0, -1) : null
+  let fallback = null
   for (const g of groups) {
-    if (g && typeof g === 'object' && Array.isArray(g[fname])) return g[fname]
+    if (!g || typeof g !== 'object') continue
+    for (const key of [fname, plural, singular]) {
+      if (key === null || !Array.isArray(g[key])) continue
+      if (g[key].length) return g[key]
+      if (!fallback) fallback = g[key]
+    }
   }
   // fuzzy: key containing the field name
   for (const g of groups) {
     if (g && typeof g === 'object') {
       for (const [k, v] of Object.entries(g)) {
-        if (Array.isArray(v) && (k === fname || k.endsWith(fname) || fname.endsWith(k))) return v
+        if (Array.isArray(v) && (k === fname || k.endsWith(fname) || fname.endsWith(k))) {
+          if (v.length) return v
+          if (!fallback) fallback = v
+        }
       }
     }
   }
-  return []
+  return fallback || []
 }
 
 function normalize(list) {
@@ -112,7 +134,16 @@ const errText = computed(() => (Array.isArray(props.error) ? props.error[0] : pr
           </Button>
         </PopoverTrigger>
         <PopoverContent class="w-[var(--radix-popover-trigger-width)] max-h-72 overflow-auto p-1" align="start">
-          <div v-if="!resolved.length" class="px-2 py-3 text-sm text-muted-foreground">No options available</div>
+          <div v-if="loading" class="px-2 py-3 text-sm text-muted-foreground">Loading options…</div>
+          <div v-else-if="!resolved.length" class="px-2 py-3 text-sm text-muted-foreground">
+            No options available
+            <button
+              v-if="loadError"
+              type="button"
+              class="ml-1 text-xs font-medium text-primary underline"
+              @click="emit('retry')"
+            >Retry</button>
+          </div>
           <label
             v-for="opt in resolved"
             :key="opt.value"
@@ -141,14 +172,24 @@ const errText = computed(() => (Array.isArray(props.error) ? props.error[0] : pr
       <select
         :id="name || field?.n"
         :value="selected ?? ''"
-        :disabled="disabled || !resolved.length"
+        :disabled="disabled || loading || (!resolved.length && !loadError)"
         class="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-        :class="errText ? 'border-destructive' : ''"
+        :class="errText || loadError ? 'border-destructive' : ''"
         @change="emit('update:modelValue', $event.target.value || null)"
       >
-        <option value="" disabled>{{ resolved.length ? placeholder : 'No options available' }}</option>
+        <option value="" disabled>
+          {{ loading ? 'Loading options…' : (resolved.length ? placeholder : 'No options available') }}
+        </option>
         <option v-for="opt in resolved" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
       </select>
+      <div v-if="!loading && loadError" class="flex items-center gap-2">
+        <p class="text-xs text-amber-600">{{ loadError }}</p>
+        <button
+          type="button"
+          class="text-xs font-medium text-primary underline"
+          @click="emit('retry')"
+        >Retry</button>
+      </div>
     </template>
 
     <p v-if="errText" class="text-xs text-destructive">{{ errText }}</p>

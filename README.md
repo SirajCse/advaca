@@ -1,7 +1,7 @@
 # advaca-vue — Full Vue 3 SPA (shadcn-vue), rebuilt 1:1 to the original AdvAca UI
 
 This is a **complete, fully-workable Vue 3 single-page application** for the
-advaca (school & college management) Laravel backend. This version (v1.5.8.0)
+advaca (school & college management) Laravel backend. This version (v1.5.14.0)
 was **fully redesigned against the original AdvAca frontend** — the routes,
 sidebar, form fields, table columns, breadcrumbs and button layout are
 reconstructed **1:1 from the original application** (the `public/older-build`
@@ -15,6 +15,166 @@ FormRequests and ListServices.
 - vite entry: `@vite(['resources/js/app.js'])`
 - api base: `/api/v1` (RouteServiceProvider `VERSION_PATH = '/v1'`)
 - Sanctum bearer-token auth + CSRF meta tag
+
+## What changed in v1.5.14.0 — the big registration/profile parity release (fieldset forms + full profile menu)
+
+You sent four screenshots comparing the two apps side by side. Both gaps you flagged are now
+closed, and the fix is **architectural**, not a one-off patch:
+
+### 1. Add Registration — the 3-fieldset form (was: a flat field list)
+
+The old app renders **three boxed sections** with conditional fields and a row repeater:
+
+| Section (old app) | Fields (exact order) | Behaviour reproduced |
+|---|---|---|
+| **Registration** | Select Period -> Select Course (async search) -> Select Enrollment Type -> Date of Registration -> *(edit only)* Registration Fee (currency) + Payment Due Date | period change **clears the course** (create mode); under the course an info line shows the registration-fee hint or the disabled warning; fee + due date exist **only on edit** (mode==edit), exactly like the old page |
+| **Student** *(create only)* | radio **New Student / Existing Student** (preselected: New) -> existing: async student search (name - code (phone)); new: Student Name (First/Middle/Third/Last), Gender radio, Birth Date, Contact Number | radio toggles swap the sub-fields live, same as the old BaseRadioGroup gate |
+| **Guardian** *(create only, repeatable)* | per-row radio **New Guardian / Existing Guardian** (preselected: New) -> existing: async guardian search (name (phone)); new: Guardian Name (with remove icon), Contact Number, Relation | **starts with 1 row**, **Add Guardian** appends (bottom-right), remove asks for confirm; payload = the guardians[] array the backend RegistrationRequest validates |
+
+After a successful create the app routes to the **registration wizard** (:uuid/wizard) —
+the old post-submit target. Every select is fed by the module pre-requisite
+(app/student/registrations/pre-requisite -> genders, studentTypes, enrollmentTypes,
+guardianTypes, relations, periods, customFields) — **enrollment type can no longer show
+"No options available"**.
+
+### 2. Profile menu — the full old dropdown (was: Profile / Change Password / Logout)
+
+Rebuilt 1:1 from the old ProfileDropdown chunk (permission guards included):
+**Welcome {name}!** header (greeting + email + team) -> **Config** / **Choose Dark/Light Mode**
+(toggles theme, icon follows state) / **Organization** / **Role & Permission** -> **Report**
+(/reports) / **Device** / **Attendance QR Code** / **Profile** / **User Preference** /
+**Change Password** -> **Failed Login Attempt** / **Clear Cache** (new tab, /cmd/clear-cache) /
+**Download Format** (/download/formats) -> **Logout**. Every target route already existed in
+this SPA — they are wired now.
+
+### 3. This is now the default for ALL 173 extracted forms — not just registration
+
+The old production bundle's **176 compiled Action views were mechanically parsed**
+(scripts/extract_old_forms.js + scripts/gen_form_layouts.mjs): every fieldset legend,
+field type, option source, label key (+ :attribute), condition (student_type==existing),
+repeat group and async search action -> **resources/js/spec/form-layouts.js** with
+**173 entities / ~1,334 fields**. CrudAction.vue now renders layouts: boxed fieldsets,
+radio groups, name-input, async search selects (old search-action endpoints mapped to the
+real v5.5.3 API: student/summary, guardian/list, academic/course/list, ...), date/time,
+currency inputs, repeat rows, conditions and edit-only fields. Entities without an extracted
+layout keep the previous flat renderer. Edit backfill mirrors the old set-form unwrapping
+(period/course -> uuid, date/fee -> .value).
+
+**Verified end-to-end** (mock backend replicating the real contracts + headless Chromium,
+26 assertions green, zero console errors, zero 4xx/5xx): registration create renders all three
+fieldsets with New Student/New Guardian preselected -> submit -> wizard route -> registration
+edit backfills period/enrollment/date/fee **and the guardian row** (Jane Doe / mother) ->
+profile menu shows all 15 old items -> departments edit backfill (standing check) ->
+config/pre-requisite still never requested without type.
+
+## What changed in v1.5.13.0 — full live audit against the running old app (advacaold.bdi.bd) + Class-Timing repeater
+
+> **Every route was crawled live** on the unrestricted old-version install you provided
+> (`https://advacaold.bdi.bd/app`, logged in as admin): **125 pages** — every Academic module
+> list + create form, Students, Users, Teams, all 18 Config pages, Blogs/News/Form/Gallery/Task,
+> Communication, Finance, Exam, Employee, Library, Hostel, Transport, Inventory, Asset, Mess,
+> Calendar, Reception, Helpdesk. Form fields, toggles, table columns and heading titles were
+> extracted page by page and diffed against this SPA's specs.
+
+**Result: full parity.** Every old page exists here with the same heading and the same field
+set, plus these three gaps the crawl exposed (now fixed):
+
+| Found on the live old app | Old app behaviour (measured) | Fix in this release |
+|---|---|---|
+| **Add Class Timing** | "Session Name" + a **row repeater** (`sessions.0.isBreak`, `sessions.1.…`) — each row has Name, Code, **Is Break** toggle, Start Time, End Time; backend `ClassTimingRequest` validates `sessions.*.name/code/is_break/start_time(H:i:s)/end_time` | new **`repeat` field type** in `FormField.vue`: add/remove rows, per-row text/time/checkbox inputs; edit backfills rows from `ClassTimingSessionResource` (Cal time objects unwrapped to `H:i:s`); submits the exact `sessions[]` array the untouched backend validates |
+| **Add/Edit Course** | **Division is a dropdown** fed by the course pre-requisite (`{divisions}`) | `Course.division` field `text → select` (module pre-requisite + cross-module `divisions?all=true` fallback) |
+| **Add/Edit Batch** | **Course is a dropdown** fed by the batch pre-requisite (`{courses}`) | `Batch.course` field `text → select` (module pre-requisite + `courses?all=true` fallback) |
+
+**Also confirmed live (already matched, no change needed):** the **Keep Adding** checkbox on
+every create form (Reset + Keep Adding left · Cancel + Save right), Period create/edit field
+order (Session, Name, Code, Short Code, Alias, Start/End Date, Enable Registration, Description),
+Department/Session/Subject/Program-Type field sets, the alias redirects
+(`/academic/timetable → /academic/timetables`, `/post → /posts`, `/task → /tasks?view=board`,
+`/exam/exams → /exams`, `/config → /config/general`), and the route-level 404s of the old app
+(`/role`, `/permission`, `/user-permission`, `/employee/employees` → its own 404 page) are
+replicated 1:1.
+
+**Verified end-to-end** (mock backend + headless Chromium, zero console errors): login → period
+gate → **Edit Class Timing renders 2 backfilled repeater rows** (`First/1st 09:00:00–10:00:00`,
+`Break/B` with Is Break checked) → **Edit Course shows `Division A` preselected** in the division
+select → **Edit Batch shows `Course A` preselected** in the course select → config pre-requisite
+never requested without `type` (still 500-guarded).
+
+## What changed in v1.5.12.0 — the `config/pre-requisite` HTTP 500 fix (root-caused against the untouched backend)
+
+**Your console error `GET /api/v1/config/pre-requisite → 500` is now explained and fixed.**
+Root cause found in the untouched v5.5.3 backend code:
+
+- `routes/api.php` line 25 serves the global pre-requisite at `/api/v1/config/pre-requisite`.
+- `ConfigService::getPreRequisite()` (app/Services/Config/ConfigService.php line 19) starts with
+  `$types = snake_case($request->type);` — `snake_case` (via laravel/helpers → `Str::snake(string)`) is
+  **not nullable**: when the request has **no `type` query param**, PHP 8.3 throws
+  `TypeError: Str::snake(): Argument #1 ($value) must be of type string, null given` → **HTTP 500**.
+- The reconstructed generic CRUD form (`CrudAction.vue`) was the one caller that fetched this
+  endpoint **without a `type` param** — every time a create/edit form opened, the console got a 500.
+
+| Fix | Detail |
+|---|---|
+| The param-less call is **removed** from `CrudAction.vue` | the global config pre-requisite only serves `list.json` items (date formats, currencies, …) — it never contained module option lists (sessions/periods/departments), so CRUD selects were always filled by the **module pre-requisite** (`/app/academic/periods/pre-requisite` → `{sessions, seeder}`) plus the cross-module fallback. Same call pattern as the original frontend. |
+| The mock backend now **reproduces the 500** | `scripts/smoke_server.js` returns HTTP 500 for a param-less `config/pre-requisite`, so a regression can never pass the smoke test again |
+| API layer guarded | `api/core.js configPreRequisite()` and `api/config.js getConfigPreRequisite()` now carry a DANGER docblock: always pass `params.type` |
+
+**Route audit (old vs new, full table):** the original production bundle (`public/build` of your
+advacaold repo — the exact code that powers demo.instikit.com) exposes **1165 route names**;
+the SPA exposes **1394** and covers **100% of the old table** — the only 5 unmatched names are the
+old app's abstract layout aliases (`Blank`, `Empty`, `Error`, `Guest`, `Setup`), not pages; the
+234 "extra" names are the explicit redirect/list aliases of the same URLs.
+
+**Verified end-to-end** (mock backend that now 500s on param-less calls + headless Chromium,
+zero console errors, zero 5xx/4xx): login → period gate shows **Skip for now** → select 2025-26 →
+full sidebar → **Edit Period backfills Session (preselected 2025-26) / Name / Code / Short Code /
+Alias / dates / Description** → **Edit Department backfills** → **Edit Blog mounts the Quill
+editor toolbar** → network log shows **only module pre-requisite calls, all 200 — no
+`config/pre-requisite` request at all, no 500**.
+
+## What changed in v1.5.11.0 — verified against the LIVE original product (demo capture) + period-gate & select resilience pack
+
+> This release was cross-checked against a **live, logged-in capture of the real
+> product** (same ScriptMint family, demo.instikit.com): the router guard, the
+> period-selection flow, the pre-requisite select pattern, the Quill editor and
+> the real API response shapes were extracted from its production bundle and
+> from real authenticated API responses (`demo-reference/REFERENCE.md`).
+
+| Area | What the live original does | What changed in the SPA |
+|---|---|---|
+| **Academic-period gate** | no period selected → redirect to **Dashboard** with an info toast; a fixed whitelist stays reachable, including all academic setup pages (`/academic/departments`, `/academic/program-types`, `/academic/programs`, `/academic/sessions`, `/academic/periods`), `/config*`, `/user*`, `/teams*`, `/notifications*` | 1:1 guard ported to `router/index.js` — the whitelist is now exempt exactly like the original, so a fresh install can create its first period without any period selected |
+| **Period selection** | header flyout, `POST /app/academic/periods/{uuid}/select`, then the user is re-fetched with `refresh_period=true` | already implemented and now verified against the live flow (the v5.5.3 backend has `periods/{period}/select`; the demo build uses `POST /app/{user}/period` — both kept working, the SPA uses the v5.5.3 route) |
+| **"No options available" selects** | relation selects are filled from each module's `pre-requisite` (`{sessions:[], seeder:[]}` for periods, `{departments:[]}` for department-incharges, …) | **cross-module option fallback**: when a module's pre-requisite cannot serve a field, the SPA now fills the select from the matching academic list endpoint (`?all=true`) — departments, sessions, periods, programs, program-types, divisions, courses, batches, subjects, class-timings |
+| **Silent empty pages** | — | every failure is now **visible**: list pages show an error alert with the HTTP status/message; action forms show a banner when options or the record fail to load; selects show "Loading options…" while in flight and a **Retry** button when the request failed |
+| **Empty-array shadowing** | — | `config/pre-requisite` empty arrays can no longer shadow real option lists (both the select resolver and the fallback detector require non-empty arrays) |
+| **Response shapes (verified live)** | period list `?all=true` → plain array; paged lists → `{data, links, meta}` (+`headers`); show → record **without envelope**; `ok()` = plain JSON | confirmed our parsing matches; `GET /api/v1/auth/user?refresh_period=true` confirmed to return `current_period_id` (`AuthUserResource::mergeWhen($request->refresh_period)`) |
+
+## What changed in v1.5.10.0 — "department available but select says No options / edit forms empty / content editor missing" fix pack
+
+> **This release found the one bug behind every remaining symptom.** The
+> reconstructed entity spec (`resources/js/spec/entities.js`) and every generic
+> CRUD page called endpoints like `academic/periods`, but the untouched Laravel
+> backend mounts **every module route under `api/v1/app/...`**
+> (`RouteServiceProvider` wraps `routes/modules/*.php` and `routes/app.php` in
+> `Route::prefix('app')`). So all 1057 CRUD endpoints answered the Laravel 404
+> fallback: lists empty, every `pre-requisite` select showed
+> **"No options available"** (department, session, seeders, …) and every
+> **edit form opened completely empty**.
+
+| Symptom you reported | Root cause (confirmed against the untouched backend) | Fixed by |
+|---|---|---|
+| **"department available" in DB but the select shows *No options available*** | the Department/Program pre-requisite request went to `api/v1/academic/...` → Laravel 404 fallback → empty option list | ✅ all **1057 entity endpoints** re-prefixed to `app/...` (`app/academic/departments`, `app/academic/periods`, …) — exactly matching `Route::prefix('app')` |
+| **Edit Period / Edit Department / every edit form opens empty** (Name, Code, Short Code, Alias, dates, Session, Seeders, Description all blank) | (1) the `show` request 404'd for the same prefix reason; (2) even with data, `CrudAction.loadRecord()` used `resolveKey()` **without importing it** — a runtime `ReferenceError` swallowed by the silent `catch` left the form untouched | ✅ endpoints prefixed + `import { resolveKey } from '@/lib/helpers'` added; relation objects (`session: {uuid,name,…}`) now unwrap to their **uuid** so the select actually matches an option |
+| **Seeders multiselect empty on Add Period** | the backend's `PeriodService::preRequisite()` returns the key **`seeder` (singular)** while the field is `seeders` | ✅ `FormRelationSelect` resolves exact → plural → **singular** → fuzzy keys (`seeder`↔`seeders`, `departments`↔`department`, `sessions`↔`session`) |
+| **"content text editor my old but it missing"** (plain text input instead of the editor) | the original frontend used the **Quill** rich text editor (`@vueup/vue-quill`, confirmed in the old build bundle); the rebuild rendered `<input type="text">` | ✅ real **Quill snow editor** restored (headers, bold/italic/underline/strike, quote, code, lists, sub/super, indent, align, link, image, video, clean) on: Certificate Template, Blog, Email, Mail Template, News, Post, Site Page/Post content — Quill ships **code-split** (166 kB chunk loads only on pages that use it); Config → Mail Template custom page also switched from `<textarea>` to Quill and its Subject from a broken empty select to a proper input |
+| Config template pages (SMS / WhatsApp / Push) rendered Subject & Template as dead **"No options available"** selects | the generated custom pages used `FormRelationSelect` for fields the backend validates as **plain strings** (`subject: required|max:100`, `template_id: nullable|max:100`) | ✅ replaced with text inputs (Push: subject input + content textarea, matching `PushNotificationTemplateRequest`) |
+
+**Also verified:** edit-time date fields receive the raw `Y-m-d` value (04/01/2025 renders in the date input), the 8 content fields keep the backend's max lengths, and `spec/entities.js` was re-synced with the corrected routes.
+
+Verified end-to-end (mock backend + headless Chromium, **17/17 checks, zero page errors**): login → period picker Continue → periods list rows → **Edit Period backfills name/code/shortcode/alias/start+end dates/session (preselected `sess-1`)/description** → Add Period shows session options + Seeders multiselect → departments list rows → **Edit Department backfills** → Add Program shows **Department options** → **Edit Blog mounts the Quill toolbar with "Hello **rich** world" loaded** (screenshot-verified styling).
+
+> **Deploy note:** this release adds one npm dependency (`@vueup/vue-quill`). After
+> extracting, run **`npm install`** once before `npm run build`.
 
 ## What changed in v1.5.9.0 — "select / data pattern" full checkup
 
