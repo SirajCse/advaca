@@ -21,21 +21,46 @@
           <AlertDescription>{{ loadNotice }}</AlertDescription>
         </Alert>
 
-        <!-- ================= LAYOUT MODE (old-app fieldset structure) ================= -->
+        <!-- ================= LAYOUT MODE (live old-app fieldset structure) ================= -->
         <template v-if="layout">
           <Card
             v-for="(fs, fi) in visibleLayout"
             :key="fi"
             class="mb-5"
           >
-            <CardHeader v-if="fs.legend">
+            <CardHeader v-if="fs.legend && fs.plain.length">
               <CardTitle>{{ trans(fs.legend) }}</CardTitle>
               <CardDescription v-if="fs.repeat && fs.fields.length">
                 {{ repeatHint }}
               </CardDescription>
             </CardHeader>
             <CardContent class="space-y-4">
-              <!-- repeatable row group (e.g. guardians) -->
+              <!-- plain grid fields of this fieldset -->
+              <div v-if="fs.plain.length" class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                <template v-for="f in fs.plain" :key="(f.name || 'anon') + fi">
+                  <div v-if="renderPlainField(f)">
+                    <LayoutField
+                      v-model="form[f.name]"
+                      :field="f"
+                      :error="fieldErrors[f.name]"
+                      :disabled="processing"
+                      :pre-req="preReq"
+                      :trans="trans"
+                      :init-search="initSearchFor(f)"
+                      @selected="(row) => onOptionSelected(f, row)"
+                    />
+                    <div
+                      v-if="isCourseField(f) && courseInfoText"
+                      class="mt-1.5 text-sm"
+                      :class="courseInfoOk ? 'text-primary dark:text-gray-400' : 'text-destructive'"
+                    >
+                      {{ courseInfoText }}
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <!-- legacy repeat fieldset (rows array keyed by fs.repeat) -->
               <template v-if="fs.repeat">
                 <div
                   v-for="(row, ri) in form[fs.repeat]"
@@ -44,7 +69,6 @@
                 >
                   <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     <template v-for="f in rowVisibleFields(fs, row)" :key="f.name">
-                      <!-- remove row icon attaches to the first row field (old: ✕ next to name) -->
                       <div>
                         <div v-if="ri === rowFirstNamedIndex(fs) && fs.fields.length > 1" class="mb-1 flex items-center justify-between">
                           <span class="text-sm font-medium">{{ fs.legend ? trans(fs.legend) : '' }} #{{ ri + 1 }}</span>
@@ -77,32 +101,24 @@
                 </div>
               </template>
 
-              <!-- plain fieldset grid -->
-              <template v-else>
-                <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                  <template v-for="f in fs.fields" :key="f.name">
-                    <div>
-                      <!-- course info line (old FormInfo under course select) -->
-                      <template v-if="f.type === 'info' && f.name === null" />
-                      <LayoutField
-                        v-model="form[f.name]"
-                        :field="f"
-                        :error="fieldErrors[f.name]"
-                        :disabled="processing"
-                        :pre-req="preReq"
-                        :trans="trans"
-                        :init-search="initSearchFor(f)"
-                        @selected="(row) => onOptionSelected(f, row)"
-                      />
-                      <div
-                        v-if="isCourseField(f) && courseInfoText"
-                        class="mt-1.5 text-sm"
-                        :class="courseInfoOk ? 'text-primary dark:text-gray-400' : 'text-destructive'"
-                      >
-                        {{ courseInfoText }}
-                      </div>
-                    </div>
-                  </template>
+              <!-- record-table row groups (fields sharing rowKey — live old-app pattern) -->
+              <template v-for="(group, gk) in fs.rowGroups" :key="gk">
+                <div v-if="group.fields.some((f) => rowGroupFieldVisible(f))" class="pt-2">
+                  <h3 v-if="groupTitle(group)" class="mb-2 text-sm font-semibold">
+                    {{ groupTitle(group) }}
+                  </h3>
+                  <RecordTable
+                    :row-key="group.rowKey"
+                    :fields="group.fields"
+                    :rows="form[group.rowKey] || []"
+                    :errors="fieldErrors"
+                    :disabled="processing"
+                    :pre-req="preReq"
+                    :trans="trans"
+                    :add-label="groupAddLabel(group)"
+                    @update:rows="(rows) => (form[group.rowKey] = rows)"
+                    @selected="(p) => onRowSelected(group, p)"
+                  />
                 </div>
               </template>
             </CardContent>
@@ -143,6 +159,7 @@ import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 import FormAction from '@/views/Components/FormAction.vue'
 import FormField from '@/views/Components/FormField.vue'
 import LayoutField from '@/views/Components/LayoutField.vue'
+import RecordTable from '@/views/Components/RecordTable.vue'
 import XCircleIcon from '@/views/Components/XCircleIcon.vue'
 import { trans } from '@/spec/lang'
 import { formLayouts } from '@/spec/form-layouts'
@@ -154,7 +171,12 @@ const route = useRoute()
 const router = useRouter()
 
 const entity = computed(() => route.meta.entity || {})
-const isCreate = computed(() => !route.params.uuid)
+// scoped sub-entity (e.g. /students/:uuid/custom-fees/create): endpoints carry
+// {uuid} (parent, from route params) and {muuid} (own record id)
+const scoped = computed(() => route.meta.scoped || null)
+const recordParam = computed(() => scoped.value?.recordParam || 'uuid')
+const isCreate = computed(() => !route.params[recordParam.value])
+const parentUuid = computed(() => (scoped.value ? route.params[scoped.value.parentParam] : undefined))
 const entityKey = computed(() => route.meta.entityKey || '')
 const layout = computed(() => formLayouts[entityKey.value] || null)
 const pageTitle = computed(() => route.meta.pageTitle || `${isCreate.value ? 'Add' : 'Edit'} ${entity.value.label || ''}`.trim())
@@ -178,9 +200,24 @@ const loadNotice = computed(() => {
   return parts.join(' · ')
 })
 
+function fillEndpoint(path) {
+  if (!path) return path
+  if (scoped.value) return path.replace('{uuid}', encodeURIComponent(parentUuid.value ?? ''))
+  return path
+}
+
+const api = computed(() => createCrudApi({
+  index: fillEndpoint(entity.value.endpoints?.index),
+  store: fillEndpoint(entity.value.endpoints?.store),
+  show: fillEndpoint(entity.value.endpoints?.show),
+  update: fillEndpoint(entity.value.endpoints?.update),
+  destroy: fillEndpoint(entity.value.endpoints?.destroy),
+  preRequisite: fillEndpoint(entity.value.endpoints?.preRequisite),
+}))
+
 // ------------------------------------------------------------------
-// Fallback lists — same as before, now keyed by the layout option keys
-// (camelCase, as the old pre-requisites serialize them).
+// Fallback lists — keyed by the layout option keys (camelCase, as the old
+// pre-requisites serialize them).
 // ------------------------------------------------------------------
 const FALLBACK_BY_OPTION_KEY = {
   periods: '/app/academic/periods',
@@ -193,6 +230,10 @@ const FALLBACK_BY_OPTION_KEY = {
   batches: '/app/academic/batches',
   subjects: '/app/academic/subjects',
   classTimings: '/app/academic/class-timings',
+  feeHeads: '/app/finance/fee-heads',
+  ledgers: '/app/finance/ledgers',
+  paymentMethods: '/app/finance/payment-methods',
+  categories: '/app/config/options?category=dialogue',
 }
 const FALLBACK_LISTS = {
   department: '/app/academic/departments', departments: '/app/academic/departments',
@@ -205,6 +246,9 @@ const FALLBACK_LISTS = {
   batch: '/app/academic/batches', batches: '/app/academic/batches',
   subject: '/app/academic/subjects', subjects: '/app/academic/subjects',
   class_timing: '/app/academic/class-timings', class_timings: '/app/academic/class-timings',
+  fee_head: '/app/finance/fee-heads', fee_heads: '/app/finance/fee-heads',
+  ledger: '/app/finance/ledgers', ledgers: '/app/finance/ledgers',
+  payment_method: '/app/finance/payment-methods', payment_methods: '/app/finance/payment-methods',
 }
 
 function preReqHasKey(fname) {
@@ -222,12 +266,38 @@ function preReqHasKey(fname) {
 }
 
 // ---- layout helpers ----
-function evalWhen(when) {
+function whenMatches(when, scope) {
+  // scope 'form' evaluates against the top-level form, 'row' against a row
   if (!when) return true
   const m = String(when).match(/^([A-Za-z0-9_]+)==(.*)$/)
   if (!m) return true
   if (m[1] === 'mode') return (m[2] === 'edit') === !isCreate.value
-  return String(form[m[1]] ?? '') === String(m[2])
+  const src = scope === 'row' ? {} : form
+  return String((scope === 'row' ? undefined : form[m[1]]) ?? '') === String(m[2])
+}
+
+function evalWhen(when) {
+  return whenMatches(when, 'form')
+}
+
+// field-level visibility: whenAny (OR list) or single when, against form
+function fieldVisible(f) {
+  const conds = f.whenAny || (f.when ? [f.when] : [])
+  if (!conds.length) return true
+  return conds.some((w) => evalWhen(w))
+}
+
+function renderPlainField(f) {
+  if (!f.name && !['info', 'button'].includes(f.type)) return true
+  if (f.type === 'info' || f.type === 'button') return false
+  return fieldVisible(f)
+}
+
+// row-group field visibility: `when` conditions that reference OTHER row-group
+// fields make no sense for the header; the group header stays visible if any
+// of its unconditional fields is present or the group has fields at all.
+function rowGroupFieldVisible(f) {
+  return true
 }
 
 const visibleLayout = computed(() => {
@@ -236,18 +306,59 @@ const visibleLayout = computed(() => {
   for (const fs of layout.value.fieldsets || []) {
     if (!evalWhen(fs.when)) continue
     if (!fs.repeat) {
-      const fields = (fs.fields || []).filter((f) => evalWhen(f.when) && f.type !== 'info')
-      if (fields.length) groups.push({ ...fs, fields })
+      const all = (fs.fields || [])
+      const plain = all.filter((f) => !f.rowKey)
+      // group rowKey fields into ordered groups
+      const rowGroups = []
+      const byKey = new Map()
+      for (const f of all) {
+        if (!f.rowKey) continue
+        if (!byKey.has(f.rowKey)) {
+          const g = { rowKey: f.rowKey, fields: [] }
+          byKey.set(f.rowKey, g)
+          rowGroups.push(g)
+        }
+        byKey.get(f.rowKey).fields.push(f)
+      }
+      if (plain.length || rowGroups.length) groups.push({ ...fs, fields: all, plain, rowGroups })
       continue
     }
     groups.push(fs)
   }
   if (layout.value.looseFields?.length) {
-    const fields = layout.value.looseFields.filter((f) => evalWhen(f.when))
-    if (fields.length) groups.push({ legend: null, repeat: null, fields })
+    const fields = layout.value.looseFields
+    const plain = fields.filter((f) => !f.rowKey)
+    const rowGroups = []
+    const byKey = new Map()
+    for (const f of fields) {
+      if (!f.rowKey) continue
+      if (!byKey.has(f.rowKey)) {
+        const g = { rowKey: f.rowKey, fields: [] }
+        byKey.set(f.rowKey, g)
+        rowGroups.push(g)
+      }
+      byKey.get(f.rowKey).fields.push(f)
+    }
+    if (plain.length || rowGroups.length) groups.push({ legend: null, repeat: null, fields, plain, rowGroups })
   }
   return groups
 })
+
+function groupTitle(group) {
+  // use the first field's labelAttr or label as the table title hint
+  const f = group.fields.find((x) => x.labelAttr || x.label)
+  if (!f) return ''
+  const t = f.labelAttr ? trans(f.labelAttr) : trans(f.label)
+  return t.includes('.') ? '' : t
+}
+
+function groupAddLabel(group) {
+  return trans('global.add').replace(':attribute', groupTitle(group) || group.rowKey.replace(/_/g, ' '))
+}
+
+function onRowSelected(group, payload) {
+  // course-info behaviour for registration rows (kept for parity)
+}
 
 function rowVisibleFields(fs, row) {
   return (fs.fields || []).filter((f) => {
@@ -318,6 +429,20 @@ const courseInfoText = computed(() => {
 // ------------------------------------------------------------------
 // form state
 // ------------------------------------------------------------------
+function rowGroupKeys(layoutDef) {
+  const keys = []
+  const seen = new Set()
+  for (const group of [...(layoutDef.fieldsets || []), ...(layoutDef.looseFields?.length ? [{ fields: layoutDef.looseFields }] : [])]) {
+    for (const f of group.fields || []) {
+      if (f.rowKey && !seen.has(f.rowKey)) {
+        seen.add(f.rowKey)
+        keys.push(f.rowKey)
+      }
+    }
+  }
+  return keys
+}
+
 function emptyForm() {
   const f = {}
   if (layout.value) {
@@ -328,8 +453,14 @@ function emptyForm() {
     for (const group of groups) {
       if (group.repeat) { f[group.repeat] = []; continue }
       for (const field of group.fields || []) {
+        if (field.rowKey) {
+          if (!(field.rowKey in f)) f[field.rowKey] = []
+          continue
+        }
+        if (!field.name || field.type === 'info' || field.type === 'button') continue
         if (field.type === 'checkbox' || field.type === 'switch') f[field.name] = false
         else if (field.type === 'name-input') f[field.name] = {}
+        else if (field.type === 'address-input') f[field.name] = {}
         else if (field.type === 'radio-group') f[field.name] = (field.name === 'student_type' || field.name === 'guardian_type') ? 'new' : ''
         else f[field.name] = field.inputType === 'number' || field.currency ? (field.name === 'registration_fee' ? 0 : '') : ''
       }
@@ -358,8 +489,6 @@ watch(() => form.period, (nv, ov) => {
 const visibleFields = computed(() =>
   (entity.value.fields || []).filter((f) => !['id', 'uuid', 'created_at', 'updated_at'].includes(f.n)),
 )
-
-const api = createCrudApi(entity.value.endpoints || {})
 
 async function fillMissingOptionsFromLists() {
   const needed = new Set()
@@ -400,7 +529,7 @@ async function loadPreRequisite() {
   preReqLoading.value = true
   preReqError.value = ''
   try {
-    const data = await api.preRequisite()
+    const data = await api.value.preRequisite()
     preReq.value = data || {}
   } catch (e) {
     const status = e?.response?.status
@@ -426,7 +555,7 @@ async function loadRecord() {
   if (isCreate.value || !entity.value.endpoints?.show) return
   recordError.value = ''
   try {
-    const data = await api.show(route.params.uuid)
+    const data = await api.value.show(route.params[recordParam.value])
     const record = data?.item || data?.record || data
     if (layout.value) {
       recordRaw.value = record
@@ -443,7 +572,22 @@ async function loadRecord() {
           })
           continue
         }
-        for (const f of group.fields) {
+        // row groups (rowKey arrays)
+        if (group.rowGroups?.length) {
+          for (const g of group.rowGroups) {
+            const rows = resolveKey(record, g.rowKey)
+            form[g.rowKey] = (Array.isArray(rows) ? rows : []).map((r) => {
+              const row = {}
+              for (const f of g.fields) {
+                if (!f.name) continue
+                row[f.name] = unwrapVal(resolveKey(r, f.name))
+              }
+              return row
+            })
+          }
+        }
+        for (const f of group.plain || []) {
+          if (!f.name) continue
           if (f.type === 'name-input') {
             const n = resolveKey(record, f.name) || {}
             form[f.name] = {
@@ -452,6 +596,11 @@ async function loadRecord() {
               third_name: n.third_name ?? resolveKey(record, 'third_name') ?? '',
               last_name: n.last_name ?? n.lastName ?? resolveKey(record, 'last_name') ?? '',
             }
+            continue
+          }
+          if (f.type === 'address-input') {
+            const a = resolveKey(record, f.name)
+            form[f.name] = a && typeof a === 'object' ? a : {}
             continue
           }
           const v = resolveKey(record, f.name)
@@ -529,9 +678,9 @@ async function submit() {
   try {
     let saved
     if (isCreate.value) {
-      saved = await api.store(payload)
+      saved = await api.value.store(payload)
     } else {
-      saved = await api.update(route.params.uuid, payload)
+      saved = await api.value.update(route.params[recordParam.value], payload)
     }
     Swal.fire({
       icon: 'success',
@@ -566,17 +715,43 @@ async function submit() {
 function goList() {
   const n = String(route.name || '')
   const base = n.replace(/(Create|Edit|Duplicate)$/, '')
-  router.push({ name: base + 'List' })
+  if (route.meta.listRoute && router.hasRoute(route.meta.listRoute)) {
+    router.push({ name: route.meta.listRoute, params: route.params })
+    return
+  }
+  if (router.hasRoute(base + 'List')) {
+    router.push({ name: base + 'List', params: { uuid: route.params[scoped.value?.parentParam || 'uuid'] } })
+    return
+  }
+  if (route.meta.listPath) router.push(route.meta.listPath)
+  else router.back()
 }
 
 const navs = computed(() => route.meta.navs || [])
 
-// ensure at least one repeat row exists in create mode (old onMounted push)
+// ensure at least one repeat row exists in create mode (old onMounted push);
+// guardian-style row groups start with one block too (old X() factory).
 function ensureDefaultRows() {
   if (!layout.value || !isCreate.value) return
   for (const group of visibleLayout.value) {
     if (group.repeat && !form[group.repeat]?.length) form[group.repeat].push(blankRow(group))
+    for (const g of group.rowGroups || []) {
+      const hasOptions = g.fields.some((f) => ['radio-group', 'search-select', 'name-input'].includes(f.type))
+      if (hasOptions && !(form[g.rowKey]?.length)) form[g.rowKey] = [blankRowFromFields(g.fields)]
+    }
   }
+}
+
+function blankRowFromFields(fields) {
+  const row = {}
+  for (const f of fields) {
+    if (!f.name) continue
+    if (f.type === 'radio-group') row[f.name] = (f.name === 'guardian_type' || f.name === 'student_type') ? 'new' : ''
+    else if (f.type === 'switch' || f.type === 'checkbox') row[f.name] = false
+    else if (f.type === 'name-input') row[f.name] = {}
+    else row[f.name] = ''
+  }
+  return row
 }
 
 onMounted(async () => {

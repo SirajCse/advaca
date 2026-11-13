@@ -1,7 +1,7 @@
 # advaca-vue — Full Vue 3 SPA (shadcn-vue), rebuilt 1:1 to the original AdvAca UI
 
 This is a **complete, fully-workable Vue 3 single-page application** for the
-advaca (school & college management) Laravel backend. This version (v1.5.14.0)
+advaca (school & college management) Laravel backend. This version (v1.5.15.0)
 was **fully redesigned against the original AdvAca frontend** — the routes,
 sidebar, form fields, table columns, breadcrumbs and button layout are
 reconstructed **1:1 from the original application** (the `public/older-build`
@@ -15,6 +15,82 @@ FormRequests and ListServices.
 - vite entry: `@vite(['resources/js/app.js'])`
 - api base: `/api/v1` (RouteServiceProvider `VERSION_PATH = '/v1'`)
 - Sanctum bearer-token auth + CSRF meta tag
+
+## What changed in v1.5.15.0 — "not all create complete" fix pack (every /create URI audited against the live old app)
+
+You said: *"not all create complete you can find all /create uri then check which is not match from all route"*.
+So every one of the **164 `/create` URIs** was enumerated from the old route table and compared
+against the live ground truth captured from advacaold.bdi.bd (authenticated DOM capture of all
+176 create/edit forms). Result: all 164 create routes existed, but **51 create/edit routes still
+rendered an empty Placeholder page**, the form layouts had drifted from the live DOM, and the
+whole profile section was an invented UI. All of it is fixed in this release:
+
+### 1. 51 placeholder create/edit routes are now real, working pages
+
+| Group | Routes | Implementation |
+|---|---|---|
+| Student sub-entities | `/students/:uuid/custom-fees/{create,edit,duplicate}`, `fee-refunds/...`, `dialogues/...` | CrudAction with **scoped endpoints** (`app/students/{uuid}/custom-fees`...), module pre-requisites, layouts from the live DOM |
+| Employee sub-entities | `/employees/:uuid/records/...`, `work-shifts/...`, `dialogues/...`, `config/document-types/...` | same scoped CrudAction |
+| Detail edit tabs | `/students|employees|guardians|contacts/:uuid/{basic,contact,login,photo}/edit` + `/students/:uuid/fee/edit` | new `EditTab.vue` — 1:1 with the old EditBasic/EditContact/EditLogin/EditPhoto/Fee chunks: name parts, father/mother, gender radio, unique-ID fields, address pair with "same as present", login account create/update with roles, photo upload to `/{entity}/{uuid}/photo`, fee due-date/amount editor (PATCH `students/{uuid}/fee`) |
+| Detail show tabs | `/students|employees|guardians|contacts/:uuid/{basic,contact,login}` | new `ShowTab.vue` read-only definition lists + Edit button |
+| Profile edit requests | `/students|employees/:uuid/edit-requests/{,new,:muuid}` | list + request form + detail |
+| Communication compose | `/communication/{emails,sms,whats-app,push-messages}/new` | audience selects + inclusion/exclusion + content, POST to the real endpoints |
+| Team role & permission | `/teams/:uuid/config/role` + `/create` | role list + scoped create (`app/teams/{uuid}/roles`) |
+| Config template edits | `/config/sms-template/:uuid/edit`, `/config/whatsapp-template/:uuid/edit` | CrudAction with live layouts |
+
+### 2. Form layouts regenerated from the LIVE old app (182 entities)
+
+`spec/form-layouts.js` is now generated from the authenticated DOM capture of every live
+create/edit form (not the minified-bundle guess): exact fieldsets, field order, widget types,
+`when` conditions and repeat groups. Fixes include:
+
+- **Simple Student Registration** — guardian section is a `guardians[]` row block exactly like
+  the old form; the Guardian **Name input now appears when "New Guardian" is selected**
+  (the old build referenced `student_type` here — the name field could never appear).
+- **Library/Transaction & Reception/GatePass/VisitorLog** — inverted `when` conditions fixed
+  (requester selects now show for the right audience).
+- **Finance/FeeConcession** — value fields show for amount **and** percent types (`whenAny`).
+- **Period form** — gained the missing Session Start/End Time, Enable Registration and Seeder
+  fields from the live DOM.
+- **Class timing, exam records, inventory items, fee components, syllabus units, ...** — the
+  repeating row groups now render as record tables (`RecordTable.vue`) bound to the same
+  `records[]`/`items[]`/... arrays the backend validates.
+- **Rich text (Quill) content fields** (Blog, News, communication, mail templates) are preserved
+  in layout mode — the live DOM scan cannot see a contenteditable div, so they are unioned from
+  the backend-driven entity specs.
+
+### 3. Profile section rebuilt 1:1 (was: an invented form)
+
+`/user` is now the old cover-page layout: cover image + round avatar + name/email header,
+the 5 tabs (**Profile | Account | Avatar | User Preference | Change Password**), a
+Name/Email/Username detail panel on the left and the active tab on the right:
+
+- **Profile** — a single Name input (POST `user/profile`) — nothing else, like the old page
+- **Account** — username/email edit with the email-verification OTP flow
+  (`updateAccount` -> `verifyAccount`)
+- **Avatar** — circular upload bound to `user/profile/avatar` (upload + remove)
+- **Preference** — locale / date format / time format / timezone selects loaded from the SAFE
+  config pre-requisite (`config/?data=dateFormats,timeFormats,locales,timezones`), with live
+  format previews, saved via POST `user/preference`
+- **Password** — current/new/confirmation (POST `user/password`)
+
+The profile dropdown also matches the old app now: Config appears **only on small screens**
+(the old `screenSize.small` gate), and the dark/light toggle **persists to the server**
+(POST `user/preference { display }`), not just locally.
+
+### 4. Verified
+
+Two headless Chromium suites (41 checks total) run against the strict mock (no-token => 401,
+bare `config/pre-requisite` => 500):
+
+- main flow: login -> period gate -> period select -> registration create (guardian name
+  appears on "New") -> 5 profile tabs -> 5 sub-entity create pages -> 5 edit tabs -> show tab ->
+  role list/create -> template edit -> communication compose
+- standing flow: period/department/batch/registration edit backfill, class-timing repeater,
+  blog Quill toolbar, batches list
+- **zero** unexpected 4xx/5xx, **zero** bare `config/pre-requisite` calls, **zero** console errors
+
+Screenshots of the rebuilt pages: `v1515-screens/`.
 
 ## What changed in v1.5.14.0 — the big registration/profile parity release (fieldset forms + full profile menu)
 

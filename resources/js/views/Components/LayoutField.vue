@@ -1,8 +1,9 @@
 <script setup>
-// Layout-driven form field — renders a field definition extracted from the old
-// app's compiled Action views (see spec/form-layouts.js). Supported types:
-// input (text/number/email/currency), textarea, select, radio-group, date, time,
-// switch, checkbox, name-input, search-select (select-search), media, custom-field.
+// Layout-driven form field — renders a field definition extracted from the OLD
+// APP LIVE DOM (spec/form-layouts.js, regenerated from advacaold.bdi.bd).
+// Supported types: input (text/number/email/date/time/password/url/tel/currency),
+// textarea, select, radio-group, date, time, switch, checkbox, name-input,
+// search-select (select-search), media, custom-field, address-input, autosuggest.
 import { computed } from 'vue'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -14,6 +15,8 @@ import flatPickr from '@/views/Components/flat-pickr.vue'
 import NameInput from '@/views/Components/NameInput.vue'
 import CustomField from '@/views/Components/CustomField.vue'
 import SearchSelect from '@/views/Components/SearchSelect.vue'
+import AddressInput from '@/views/Components/AddressInput.vue'
+import RichEditor from '@/views/Components/RichEditor.vue'
 
 const props = defineProps({
   field: { type: Object, required: true },     // layout field def
@@ -26,6 +29,13 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'selected'])
+
+// <datalist> id for autosuggest fields (unique per field name)
+const autoId = computed(() => `autosuggest-${(props.field.name || 'x').replace(/[^a-z0-9_]/gi, '')}`)
+const autoSuggestions = computed(() => {
+  const s = props.field.suggestions || props.preReq?.[props.field.optionsKey || ''] || []
+  return (Array.isArray(s) ? s : []).slice(0, 30)
+})
 
 const label = computed(() => {
   const f = props.field
@@ -239,7 +249,50 @@ function onCheck(checked) {
       <p v-if="errText" class="text-xs text-destructive">{{ errText }}</p>
     </template>
 
-    <!-- default: text/number/email input -->
+    <!-- address-input: compound address (line1/line2/city/state/zip/country) -->
+    <template v-else-if="field.type === 'address-input'">
+      <AddressInput
+        :model-value="modelValue && typeof modelValue === 'object' ? modelValue : {}"
+        :disabled="disabled"
+        @update:model-value="(v) => emit('update:modelValue', v)"
+      />
+      <p v-if="errText" class="text-xs text-destructive">{{ errText }}</p>
+    </template>
+
+    <!-- rich text editor (old app QuillEditor — Blog/News/Communication content) -->
+    <template v-else-if="field.type === 'editor'">
+      <Label v-if="label">{{ label }}</Label>
+      <RichEditor
+        :model-value="modelValue || ''"
+        :disabled="disabled"
+        @update:model-value="(v) => emit('update:modelValue', v)"
+      />
+      <p v-if="errText" class="text-xs text-destructive">{{ errText }}</p>
+    </template>
+
+    <!-- autosuggest: free text with suggestions (old BaseAutosuggest) -->
+    <template v-else-if="field.type === 'autosuggest'">
+      <Label :for="field.name">
+        {{ label }}
+        <span v-if="field.required" class="text-destructive">*</span>
+      </Label>
+      <Input
+        :id="field.name"
+        :list="autoId"
+        :model-value="inputValue"
+        :disabled="disabled"
+        :placeholder="field.placeholder ? trans(field.placeholder) : ''"
+        class="h-9"
+        :class="errText ? 'border-destructive' : ''"
+        @update:model-value="(v) => emit('update:modelValue', v)"
+      />
+      <datalist :id="autoId">
+        <option v-for="s in autoSuggestions" :key="typeof s === 'string' ? s : s.value" :value="typeof s === 'string' ? s : s.value" />
+      </datalist>
+      <p v-if="errText" class="text-xs text-destructive">{{ errText }}</p>
+    </template>
+
+    <!-- default: text/number/email/date/time/password input (inputType passthrough) -->
     <template v-else>
       <Label :for="field.name">
         {{ label }}
@@ -249,7 +302,7 @@ function onCheck(checked) {
         <span v-if="field.currency" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
         <Input
           :id="field.name"
-          :type="field.inputType === 'number' ? 'number' : 'text'"
+          :type="['number', 'email', 'password', 'date', 'time', 'url', 'tel'].includes(field.inputType) ? field.inputType : 'text'"
           :model-value="inputValue"
           :disabled="disabled"
           :placeholder="field.placeholder ? trans(field.placeholder) : ''"

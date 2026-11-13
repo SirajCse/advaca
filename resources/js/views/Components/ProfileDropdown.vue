@@ -17,6 +17,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { KeyRound, LogOut, Moon, Sun, UserCircle } from 'lucide-vue-next'
+import http from '@/lib/http'
 
 const auth = useAuthStore()
 const theme = useThemeStore()
@@ -26,6 +27,19 @@ async function doLogout() {
   await auth.logout()
   router.push('/login')
 }
+
+// old app: theme toggle persists via POST user/preference { display } and the
+// response user refreshes the preference store — local toggle + best-effort
+// persist so the choice survives re-login on the same account.
+async function toggleTheme() {
+  theme.toggle()
+  try {
+    await http.post('/app/user/preference', { display: theme.dark ? 'dark' : 'light' })
+  } catch { /* stay local-only when offline */ }
+}
+
+// old ProfileDropdown shows Config ONLY on small screens (screenSize.small)
+const isSmallScreen = () => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false)
 
 const name = computed(() => auth.user?.profile?.name || auth.user?.username || 'Admin')
 const email = computed(() => auth.user?.email || '')
@@ -67,11 +81,11 @@ function go(routeName, params) {
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
 
-      <DropdownMenuItem v-if="can('config:store')" :disabled="$route.name === 'ConfigGeneral'" @click="go('Config')">
+      <DropdownMenuItem v-if="can('config:store') && isSmallScreen()" :disabled="$route.name === 'ConfigGeneral'" @click="go('Config')">
         {{ trans('config.config') }}
       </DropdownMenuItem>
 
-      <DropdownMenuItem @click="theme.toggle()">
+      <DropdownMenuItem @click="toggleTheme">
         <template v-if="theme.dark">
           {{ trans('global.choose').replace(':attribute', trans('general.light_mode')) }}
           <Sun class="ml-auto h-4 w-4" />
