@@ -92,12 +92,11 @@ router.beforeEach(async (to) => {
     return { path: '/login', query: { redirect: to.fullPath } }
   }
 
-  // unknown URL for a signed-in user must never dead-end on the 404 page —
-  // land on the dashboard instead (the intended path travels in ?nf= so the
-  // dashboard can show a "page not found" notice). Guests are already sent
-  // to /login above.
+  // unknown URL for a signed-in user renders the in-shell 404 page — 1:1 with
+  // the original frontend, which shows its "Page not found!" screen inside the
+  // app shell (old UI parity, 2026-11 audit)
   if (to.name === 'NotFound' && auth.isLoggedIn) {
-    return { path: '/dashboard', query: { nf: to.fullPath } }
+    return true
   }
 
   // === original frontend's academic-period gate (1:1 behaviour) ===

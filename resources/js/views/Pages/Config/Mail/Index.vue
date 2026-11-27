@@ -34,6 +34,24 @@
         </div>
 
         <div class="space-y-1.5">
+          <Label for="smtp_host">SMTP host</Label>
+          <Input id="smtp_host" v-model="form.smtp_host" type="text" :class="errors.smtp_host ? 'border-destructive' : ''" />
+          <p v-if="errors.smtp_host" class="text-xs text-destructive">{{ String(errors.smtp_host[0] || errors.smtp_host) }}</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <Label for="smtp_port">SMTP port</Label>
+          <Input id="smtp_port" v-model="form.smtp_port" type="number" :class="errors.smtp_port ? 'border-destructive' : ''" />
+          <p v-if="errors.smtp_port" class="text-xs text-destructive">{{ String(errors.smtp_port[0] || errors.smtp_port) }}</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <Label for="smtp_encryption">SMTP encryption</Label>
+          <Input id="smtp_encryption" v-model="form.smtp_encryption" type="text" placeholder="ssl or tls" :class="errors.smtp_encryption ? 'border-destructive' : ''" />
+          <p v-if="errors.smtp_encryption" class="text-xs text-destructive">{{ String(errors.smtp_encryption[0] || errors.smtp_encryption) }}</p>
+        </div>
+
+        <div class="space-y-1.5">
           <Label for="smtp_username">Smtp username<span v-if="false" class="text-destructive"> *</span></Label>
           <Input id="smtp_username" v-model="form.smtp_username" type="text" :class="errors.smtp_username ? 'border-destructive' : ''" />
           <p v-if="errors.smtp_username" class="text-xs text-destructive">{{ String(errors.smtp_username[0] || errors.smtp_username) }}</p>
@@ -105,6 +123,9 @@ const form = reactive({
     driver: "",
     from_name: "",
     from_address: "",
+    smtp_host: "",
+    smtp_port: "",
+    smtp_encryption: "",
     smtp_username: "",
     smtp_password: "",
     mailgun_domain: "",
@@ -133,7 +154,7 @@ async function save() {
   errors.value = {}
   submitError.value = ''
   try {
-    await storeAppConfig({ mail: { ...form } })
+    await storeAppConfig({ type: 'mail', ...form })
     Swal.fire({ icon: 'success', title: 'Saved', text: 'Mail settings saved.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
   } catch (e) {
     if (e.fieldErrors) errors.value = e.fieldErrors

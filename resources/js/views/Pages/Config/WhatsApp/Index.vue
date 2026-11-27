@@ -203,7 +203,7 @@ async function save() {
   errors.value = {}
   submitError.value = ''
   try {
-    await storeAppConfig({ whatsapp: { ...form } })
+    await storeAppConfig({ type: 'whatsapp', ...form })
     Swal.fire({ icon: 'success', title: 'Saved', text: 'Whatsapp settings saved.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
   } catch (e) {
     if (e.fieldErrors) errors.value = e.fieldErrors

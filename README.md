@@ -1,7 +1,7 @@
 # advaca-vue — Full Vue 3 SPA (shadcn-vue), rebuilt 1:1 to the original AdvAca UI
 
 This is a **complete, fully-workable Vue 3 single-page application** for the
-advaca (school & college management) Laravel backend. This version (v1.5.15.0)
+advaca (school & college management) Laravel backend. This version (v1.5.16.0)
 was **fully redesigned against the original AdvAca frontend** — the routes,
 sidebar, form fields, table columns, breadcrumbs and button layout are
 reconstructed **1:1 from the original application** (the `public/older-build`
@@ -15,6 +15,63 @@ FormRequests and ListServices.
 - vite entry: `@vite(['resources/js/app.js'])`
 - api base: `/api/v1` (RouteServiceProvider `VERSION_PATH = '/v1'`)
 - Sanctum bearer-token auth + CSRF meta tag
+
+## What changed in v1.5.16.0 — live old-vs-new comparison on advacaold.bdi.bd vs advaca.bdi.bd (same DB, real create/edit tests)
+
+The user deployed both UIs on their own server with the **same database** and
+asked for a sequential a-to-z comparison of **every route** — try the same page
+on both, create/edit/view on each, and fix whatever is missing in the latest UI.
+
+**Audit:** all **203 UI routes** were opened on both sites with headless Chromium,
+extracting every label/input/select/button/tab/column plus the exact API calls
+each side makes.
+
+**Root causes found and fixed (no Laravel file touched):**
+
+1. **Every Config page's Save button was broken** — the SPA posted
+   `{ general: {...} }` but the backend `StoreConfig` action reads
+   `Arr::get($params,'type')` and answered **422 "This is not a valid action."**
+   Proven on the live backend: nested shape → 422, flat `{ type: 'general', ...fields }`
+   → 200. All 10 config pages (General, System, Auth, Mail, SMS, WhatsApp, Chat,
+   Feature, Notification, SocialNetwork) now post the flat shape.
+2. **ProgramType create/edit rendered an empty form** — its extracted layout spec
+   was `{"fieldsets":[],"looseFields":[]}`; a truthy-but-empty layout suppressed the
+   flat-field fallback. Empty specs now fall back to the entity field list
+   (Name, Code, Short Code, Description all render again).
+3. **Class Timing / repeater row-groups** — the create form showed only
+   name + description because row-group rows start empty. `emptyForm()` now
+   pre-seeds one blank row per `rowKey` group (old app shows the first
+   session row immediately), and `start_time`/`end_time`/`due_time` fields
+   (16 across ClassTiming, Period, Trip, Event, WorkShift, OnlineExam, Schedule,
+   Todo) are rendered as **time inputs** (`as:"time"` in the old app), not date pickers.
+4. **Config → General** gained the 12 missing fields the old page has
+   (Description, Address line 1/2, City, State, Zipcode, Country, Email, Phone,
+   Fax, Website, Financial year code) — keys match `StoreGeneralConfig` validation.
+5. **Config → Social network** gained facebook/twitter/google/linkedin/youtube/github.
+6. **Config → System** gained Default guest page layout, Whitelist IPs,
+   Blacklist IPs; `currencies` is now posted as an **array** and `per_page` as a
+   number (backend validation: `currencies required|array|min:1`, `per_page|integer`).
+7. **Config → Mail** gained SMTP host / port / encryption (backend `required_if:driver,smtp`).
+8. **Config → Feature** — the four instruction fields are rich-text editors (Quill),
+   matching the old app.
+9. **Config → Asset** rewritten: seven image uploads
+   (guest background 1920x2880, guest full page background 1920x1080, logo 600x200,
+   logo light 600x200, icon 512x512, icon light 512x512, favicon 128x128) via
+   multipart `POST /app/config/assets?type=...` + `DELETE` remove, replacing the
+   old text-input stub.
+10. **Config → Module** rewritten: the real module-visibility manager —
+    `GET /app/config/module-pre-requisite` + saved ordering/visibility from
+    `GET /app/config`, per-module and per-child switches with ↑/↓ ordering,
+    saved via `POST /app/config/module {modules:[...]}` (StoreModule).
+11. **Unknown URLs render the in-shell "Page not found" screen** (1:1 with the old
+    app) instead of bouncing to the dashboard.
+12. **Dashboard stat labels humanized** (camelCase/snake_case → Title Case) and
+    values fall back through count/total/value/amount keys.
+
+**Known backend behaviour (not a Vue bug):** `GET /api/v1/app/inventory/stock-items`
+returns HTTP 500 on the untouched backend **also for the old UI** (verified from the
+old site's own network log) — nothing to fix client-side. The Laravel debugbar is
+visible on the deployed host; set `APP_DEBUG=false` in production to hide it.
 
 ## What changed in v1.5.15.0 — "not all create complete" fix pack (every /create URI audited against the live old app)
 

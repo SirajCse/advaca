@@ -1,5 +1,6 @@
 /vendor
 /node_modules
+/public/build
 /public/hot
 /public/storage
 /storage/*.key
@@ -10,5 +11,3 @@ npm-debug.log
 yarn-error.log
 tool-results/
 /storage/framework
-/storage/framework
-/storage

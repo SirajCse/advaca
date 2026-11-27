@@ -690,7 +690,7 @@ export const formLayouts = {
       "when": null
      },
      {
-      "type": "date",
+      "type": "time",
       "name": "start_time",
       "rowKey": "sessions",
       "label": "academic.class_timing.props.start_time",
@@ -702,7 +702,7 @@ export const formLayouts = {
       "when": null
      },
      {
-      "type": "date",
+      "type": "time",
       "name": "end_time",
       "rowKey": "sessions",
       "label": "academic.class_timing.props.end_time",
@@ -1331,7 +1331,7 @@ export const formLayouts = {
     "repeat": null,
     "fields": [
      {
-      "type": "date",
+      "type": "time",
       "name": "session_start_time",
       "label": "academic.period.props.session_start_time",
       "model": "t.sessionStartTime",
@@ -1342,7 +1342,7 @@ export const formLayouts = {
       "when": null
      },
      {
-      "type": "date",
+      "type": "time",
       "name": "session_end_time",
       "label": "academic.period.props.session_end_time",
       "model": "t.sessionEndTime",
@@ -2087,7 +2087,7 @@ export const formLayouts = {
     "when": null
    },
    {
-    "type": "date",
+    "type": "time",
     "name": "start_time",
     "label": "activity.trip.props.start_time",
     "model": "s.startTime",
@@ -2109,7 +2109,7 @@ export const formLayouts = {
     "when": null
    },
    {
-    "type": "date",
+    "type": "time",
     "name": "end_time",
     "label": "activity.trip.props.end_time",
     "model": "s.endTime",
@@ -3080,7 +3080,7 @@ export const formLayouts = {
     "when": null
    },
    {
-    "type": "date",
+    "type": "time",
     "name": "start_time",
     "label": "calendar.event.props.start_time",
     "model": "s.startTime",
@@ -3102,7 +3102,7 @@ export const formLayouts = {
     "when": null
    },
    {
-    "type": "date",
+    "type": "time",
     "name": "end_time",
     "label": "calendar.event.props.end_time",
     "model": "s.endTime",
@@ -4680,7 +4680,7 @@ export const formLayouts = {
     "when": null
    },
    {
-    "type": "date",
+    "type": "time",
     "name": "start_time",
     "rowKey": "records",
     "label": "employee.attendance.work_shift.props.start_time",
@@ -4692,7 +4692,7 @@ export const formLayouts = {
     "when": null
    },
    {
-    "type": "date",
+    "type": "time",
     "name": "end_time",
     "rowKey": "records",
     "label": "employee.attendance.work_shift.props.end_time",
@@ -7199,7 +7199,7 @@ export const formLayouts = {
     "when": null
    },
    {
-    "type": "date",
+    "type": "time",
     "name": "start_time",
     "label": "exam.online_exam.props.start_time",
     "model": "t.startTime",
@@ -7221,7 +7221,7 @@ export const formLayouts = {
     "when": null
    },
    {
-    "type": "date",
+    "type": "time",
     "name": "end_time",
     "label": "exam.online_exam.props.end_time",
     "model": "t.endTime",
@@ -7331,7 +7331,7 @@ export const formLayouts = {
       "when": null
      },
      {
-      "type": "date",
+      "type": "time",
       "name": "start_time",
       "rowKey": "records",
       "label": "exam.schedule.props.start_time",
@@ -7398,7 +7398,7 @@ export const formLayouts = {
       "when": null
      },
      {
-      "type": "date",
+      "type": "time",
       "name": "start_time",
       "rowKey": "additionalSubjects",
       "label": "exam.schedule.props.start_time",
@@ -15851,7 +15851,7 @@ export const formLayouts = {
     "when": null
    },
    {
-    "type": "date",
+    "type": "time",
     "name": "due_time",
     "label": "task.props.due_time",
     "model": "o.dueTime",
@@ -17333,7 +17333,7 @@ export const formLayouts = {
     "when": null
    },
    {
-    "type": "date",
+    "type": "time",
     "name": "due_time",
     "label": "utility.todo.props.due_time",
     "model": "o.dueTime",

@@ -85,7 +85,7 @@ async function save() {
   errors.value = {}
   submitError.value = ''
   try {
-    await storeAppConfig({ chat: { ...form } })
+    await storeAppConfig({ type: 'chat', ...form })
     Swal.fire({ icon: 'success', title: 'Saved', text: 'Chat settings saved.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
   } catch (e) {
     if (e.fieldErrors) errors.value = e.fieldErrors

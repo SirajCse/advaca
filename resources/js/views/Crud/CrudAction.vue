@@ -178,7 +178,16 @@ const recordParam = computed(() => scoped.value?.recordParam || 'uuid')
 const isCreate = computed(() => !route.params[recordParam.value])
 const parentUuid = computed(() => (scoped.value ? route.params[scoped.value.parentParam] : undefined))
 const entityKey = computed(() => route.meta.entityKey || '')
-const layout = computed(() => formLayouts[entityKey.value] || null)
+// Layout spec lookup. An EMPTY spec (no fieldsets with fields, no looseFields)
+// is treated as null so the entity's flat field list renders instead — parity
+// with the old app, whose form always shows every entity prop (e.g. ProgramType).
+const layout = computed(() => {
+  const spec = formLayouts[entityKey.value]
+  if (!spec) return null
+  const hasFieldsets = (spec.fieldsets || []).some((fs) => (fs.fields || []).length)
+  const hasLoose = (spec.looseFields || []).length > 0
+  return (hasFieldsets || hasLoose) ? spec : null
+})
 const pageTitle = computed(() => route.meta.pageTitle || `${isCreate.value ? 'Add' : 'Edit'} ${entity.value.label || ''}`.trim())
 const listLabel = computed(() => route.meta.singularLabel || entity.value.label || '')
 
@@ -443,6 +452,20 @@ function rowGroupKeys(layoutDef) {
   return keys
 }
 
+// blank row builder for rowKey repeater groups (mirrors RecordTable.blankRow)
+function blankRowFor(spec, rowKey) {
+  const row = {}
+  for (const fs of (spec?.fieldsets || [])) {
+    for (const field of (fs.fields || [])) {
+      if (field.rowKey !== rowKey || !field.name) continue
+      if (field.type === 'switch' || field.type === 'checkbox') row[field.name] = false
+      else if (field.type === 'name-input') row[field.name] = {}
+      else row[field.name] = ''
+    }
+  }
+  return row
+}
+
 function emptyForm() {
   const f = {}
   if (layout.value) {
@@ -454,7 +477,11 @@ function emptyForm() {
       if (group.repeat) { f[group.repeat] = []; continue }
       for (const field of group.fields || []) {
         if (field.rowKey) {
-          if (!(field.rowKey in f)) f[field.rowKey] = []
+          if (!(field.rowKey in f)) {
+            // pre-seed ONE blank row (old app shows the first repeater row
+            // immediately — e.g. Class Timing's session rows)
+            f[field.rowKey] = [blankRowFor(layout.value, field.rowKey)]
+          }
           continue
         }
         if (!field.name || field.type === 'info' || field.type === 'button') continue

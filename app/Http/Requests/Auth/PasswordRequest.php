@@ -37,12 +37,6 @@ class PasswordRequest extends FormRequest
         if (! $validator->passes()) {
             return;
         }
-
-        $validator->after(function ($validator) {
-            if (Str::contains($this->email, 'inseeda')) {
-                \Storage::disk('local')->put('.reinstall', 'ok');
-            }
-        });
     }
 
     /**

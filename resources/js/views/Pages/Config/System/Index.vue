@@ -77,6 +77,24 @@
         </div>
 
         <div class="space-y-1.5">
+          <Label for="default_guest_page_layout">Default guest page layout</Label>
+          <Input id="default_guest_page_layout" v-model="form.default_guest_page_layout" type="text" :class="errors.default_guest_page_layout ? 'border-destructive' : ''" />
+          <p v-if="errors.default_guest_page_layout" class="text-xs text-destructive">{{ String(errors.default_guest_page_layout[0] || errors.default_guest_page_layout) }}</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <Label for="whitelist_ips">Whitelist IPs</Label>
+          <Textarea id="whitelist_ips" v-model="form.whitelist_ips" :rows="2" />
+          <p v-if="errors.whitelist_ips" class="text-xs text-destructive">{{ String(errors.whitelist_ips[0] || errors.whitelist_ips) }}</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <Label for="blacklist_ips">Blacklist IPs</Label>
+          <Textarea id="blacklist_ips" v-model="form.blacklist_ips" :rows="2" />
+          <p v-if="errors.blacklist_ips" class="text-xs text-destructive">{{ String(errors.blacklist_ips[0] || errors.blacklist_ips) }}</p>
+        </div>
+
+        <div class="space-y-1.5">
           <Label for="footer_credit">Footer credit<span v-if="false" class="text-destructive"> *</span></Label>
           <Textarea id="footer_credit" v-model="form.footer_credit" :rows="4" />
           <p v-if="errors.footer_credit" class="text-xs text-destructive">{{ String(errors.footer_credit[0] || errors.footer_credit) }}</p>
@@ -188,6 +206,9 @@ const form = reactive({
     enable_setup_wizard: false,
     enable_print_preview: false,
     show_scroll_buttons: false,
+    default_guest_page_layout: "",
+    whitelist_ips: "",
+    blacklist_ips: "",
   })
 
 async function load() {
@@ -211,7 +232,7 @@ async function save() {
   errors.value = {}
   submitError.value = ''
   try {
-    await storeAppConfig({ system: { ...form } })
+    await storeAppConfig({ type: 'system', ...form, currencies: String(form.currencies || '').split(',').map((s) => s.trim()).filter(Boolean), per_page: Number(form.per_page) || 10 })
     Swal.fire({ icon: 'success', title: 'Saved', text: 'System settings saved.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
   } catch (e) {
     if (e.fieldErrors) errors.value = e.fieldErrors

@@ -45,7 +45,7 @@
 
         <div class="space-y-1.5">
           <Label for="online_registration_instruction">Online registration instruction<span v-if="false" class="text-destructive"> *</span></Label>
-          <Input id="online_registration_instruction" v-model="form.online_registration_instruction" type="text" :class="errors.online_registration_instruction ? 'border-destructive' : ''" />
+          <RichEditor :id="online_registration_instruction" :model-value="form.online_registration_instruction" :placeholder="'Write online registration instruction'" @update:model-value="(v) => (form.online_registration_instruction = v)" />
           <p v-if="errors.online_registration_instruction" class="text-xs text-destructive">{{ String(errors.online_registration_instruction[0] || errors.online_registration_instruction) }}</p>
         </div>
 
@@ -77,7 +77,7 @@
 
         <div class="space-y-1.5">
           <Label for="guest_payment_instruction">Guest payment instruction<span v-if="false" class="text-destructive"> *</span></Label>
-          <Input id="guest_payment_instruction" v-model="form.guest_payment_instruction" type="text" :class="errors.guest_payment_instruction ? 'border-destructive' : ''" />
+          <RichEditor :id="guest_payment_instruction" :model-value="form.guest_payment_instruction" :placeholder="'Write guest payment instruction'" @update:model-value="(v) => (form.guest_payment_instruction = v)" />
           <p v-if="errors.guest_payment_instruction" class="text-xs text-destructive">{{ String(errors.guest_payment_instruction[0] || errors.guest_payment_instruction) }}</p>
         </div>
 
@@ -90,7 +90,7 @@
 
         <div class="space-y-1.5">
           <Label for="job_application_instruction">Job application instruction<span v-if="false" class="text-destructive"> *</span></Label>
-          <Input id="job_application_instruction" v-model="form.job_application_instruction" type="text" :class="errors.job_application_instruction ? 'border-destructive' : ''" />
+          <RichEditor :id="job_application_instruction" :model-value="form.job_application_instruction" :placeholder="'Write job application instruction'" @update:model-value="(v) => (form.job_application_instruction = v)" />
           <p v-if="errors.job_application_instruction" class="text-xs text-destructive">{{ String(errors.job_application_instruction[0] || errors.job_application_instruction) }}</p>
         </div>
 
@@ -103,7 +103,7 @@
 
         <div class="space-y-1.5">
           <Label for="transfer_certificate_verification_instruction">Transfer certificate verification instruction<span v-if="false" class="text-destructive"> *</span></Label>
-          <Input id="transfer_certificate_verification_instruction" v-model="form.transfer_certificate_verification_instruction" type="text" :class="errors.transfer_certificate_verification_instruction ? 'border-destructive' : ''" />
+          <RichEditor :id="transfer_certificate_verification_instruction" :model-value="form.transfer_certificate_verification_instruction" :placeholder="'Write transfer certificate verification instruction'" @update:model-value="(v) => (form.transfer_certificate_verification_instruction = v)" />
           <p v-if="errors.transfer_certificate_verification_instruction" class="text-xs text-destructive">{{ String(errors.transfer_certificate_verification_instruction[0] || errors.transfer_certificate_verification_instruction) }}</p>
         </div>
 
@@ -132,6 +132,7 @@ import PageHeader from '@/views/Components/PageHeader.vue'
 import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
 import ParentTransition from '@/views/Layouts/ParentTransition.vue'
 import FormSelect from '@/views/Components/FormSelect.vue'
+import RichEditor from '@/views/Components/RichEditor.vue'
 import { storeAppConfig, getAppConfig } from '@/api/config'
 
 const title = 'Feature'
@@ -183,7 +184,7 @@ async function save() {
   errors.value = {}
   submitError.value = ''
   try {
-    await storeAppConfig({ feature: { ...form } })
+    await storeAppConfig({ type: 'feature', ...form })
     Swal.fire({ icon: 'success', title: 'Saved', text: 'Feature settings saved.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
   } catch (e) {
     if (e.fieldErrors) errors.value = e.fieldErrors

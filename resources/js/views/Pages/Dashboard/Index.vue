@@ -1,6 +1,5 @@
 <script setup>
 import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import http from '@/lib/http'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -8,21 +7,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import PageHeader from '@/views/Components/PageHeader.vue'
 import { fmtDate } from '@/lib/helpers'
 
-const route = useRoute()
-const router = useRouter()
-
 const stats = ref(null)
 const studentChart = ref(null)
 const schedule = ref([])
 const loading = ref(true)
 const error = ref(false)
-// unknown URLs redirect here with ?nf=<original path> (the router guard keeps
-// signed-in users away from the dead-end 404 page) — surface it once, then
-// clean the query so a refresh does not nag.
-const notFoundPath = ref(typeof route.query.nf === 'string' ? route.query.nf : '')
-if (notFoundPath.value) {
-  router.replace({ path: '/dashboard', query: {} })
-}
 
 onMounted(async () => {
   try {
@@ -42,18 +31,34 @@ onMounted(async () => {
 })
 
 const statEntries = () => Object.entries(stats.value || {}).slice(0, 8)
+
+// humanize a stat key: camelCase + snake_case → Title Case
+function humanize(k) {
+  return String(k)
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function statValue(v) {
+  if (v === null || v === undefined) return '-'
+  if (typeof v === 'number' || typeof v === 'string') return v
+  if (typeof v === 'object') {
+    for (const key of ['count', 'total', 'value', 'amount', 'sum', 'strength', 'present', 'absent', 'collected']) {
+      if (v[key] !== undefined && v[key] !== null && v[key] !== '') return v[key]
+    }
+    const first = Object.values(v).find((x) => typeof x === 'number' || typeof x === 'string')
+    return first ?? '-'
+  }
+  return '-'
+}
 </script>
 
 <template>
   <div class="space-y-6">
     <PageHeader title="Dashboard" :navs="[{ label: 'Home' }, { label: 'Dashboard' }]" />
-
-    <Alert v-if="notFoundPath" class="border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-      <AlertTitle>Page not found</AlertTitle>
-      <AlertDescription>
-        We could not find <code class="font-mono text-xs">{{ notFoundPath }}</code> — you were brought to the dashboard instead. Use the menu on the left to open the page you need.
-      </AlertDescription>
-    </Alert>
 
     <Alert v-if="error">
       <AlertTitle>Welcome to AdvAca</AlertTitle>
@@ -69,10 +74,10 @@ const statEntries = () => Object.entries(stats.value || {}).slice(0, 8)
     <div v-else-if="stats" class="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
       <Card v-for="[k, v] in statEntries()" :key="k">
         <CardHeader class="pb-2">
-          <CardTitle class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{{ k.replace(/_/g, ' ') }}</CardTitle>
+          <CardTitle class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{{ humanize(k) }}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold">{{ typeof v === 'object' ? (v?.count ?? v?.total ?? '-') : v }}</div>
+          <div class="text-2xl font-bold">{{ statValue(v) }}</div>
         </CardContent>
       </Card>
     </div>

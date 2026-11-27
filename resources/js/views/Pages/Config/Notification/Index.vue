@@ -183,7 +183,7 @@ async function save() {
   errors.value = {}
   submitError.value = ''
   try {
-    await storeAppConfig({ notification: { ...form } })
+    await storeAppConfig({ type: 'notification', ...form })
     Swal.fire({ icon: 'success', title: 'Saved', text: 'Notification settings saved.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
   } catch (e) {
     if (e.fieldErrors) errors.value = e.fieldErrors

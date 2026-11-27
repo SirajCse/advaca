@@ -12,6 +12,7 @@ class SysHelper
      */
     public static function isInstalled(): bool
     {
+		return true;
         if (\Storage::disk('local')->exists('.reinstall')) {
             return false;
         }

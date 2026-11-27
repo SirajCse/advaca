@@ -1,5 +1,8 @@
 <!--
-  Page: Config/Module/Index.vue  (auto-generated full implementation - settings)
+  Page: Config/Module/Index.vue — 1:1 with the old app's Config → Module page
+  (live audit 2026-11): module visibility toggles + ordering, saved via
+  POST /app/config/module with { modules: [...] } (StoreModule action).
+  Data source: GET /app/config/module-pre-requisite + current GET /app/config.
 -->
 <template>
   <div class="space-y-5">
@@ -11,16 +14,31 @@
       <form @submit.prevent="save">
         <Card>
           <CardHeader>
-            <CardTitle>Module settings</CardTitle>
-            <CardDescription>Configure Module options for your institution.</CardDescription>
+            <CardTitle>Module Configuration</CardTitle>
+            <CardDescription>Toggle module visibility and reorder modules for your institution.</CardDescription>
           </CardHeader>
-          <CardContent class="space-y-5">
-                    <div class="space-y-1.5">
-          <Label for="name">Name<span v-if="false" class="text-destructive"> *</span></Label>
-          <Input id="name" v-model="form.name" type="text" :class="errors.name ? 'border-destructive' : ''" />
-          <p v-if="errors.name" class="text-xs text-destructive">{{ String(errors.name[0] || errors.name) }}</p>
-        </div>
-
+          <CardContent class="space-y-3">
+            <div v-for="(mod, mi) in modules" :key="mod.name" class="rounded-lg border p-4">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <Switch :checked="!!mod.visibility" @update:checked="(v) => (mod.visibility = v)" />
+                  <div>
+                    <p class="text-sm font-medium">{{ mod.label }}</p>
+                    <p class="text-xs text-muted-foreground">{{ (mod.children || []).length }} sub-modules</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1">
+                  <Button type="button" variant="ghost" size="sm" :disabled="mi === 0 || processing" @click="move(mi, -1)">↑</Button>
+                  <Button type="button" variant="ghost" size="sm" :disabled="mi === modules.length - 1 || processing" @click="move(mi, 1)">↓</Button>
+                </div>
+              </div>
+              <div v-if="(mod.children || []).length" class="mt-3 grid gap-2 border-t pt-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div v-for="child in mod.children" :key="child.name" class="flex items-center gap-2">
+                  <Switch :checked="child.visibility !== false && mod.visibility !== false" @update:checked="(v) => (child.visibility = v)" />
+                  <span class="text-sm" :class="mod.visibility === false ? 'text-muted-foreground' : ''">{{ child.label }}</span>
+                </div>
+              </div>
+            </div>
 
             <p v-if="submitError" class="text-sm text-destructive">{{ submitError }}</p>
           </CardContent>
@@ -34,19 +52,15 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import Swal from 'sweetalert2'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import PageHeader from '@/views/Components/PageHeader.vue'
 import PageHeaderAction from '@/views/Components/PageHeaderAction.vue'
 import ParentTransition from '@/views/Layouts/ParentTransition.vue'
-import FormSelect from '@/views/Components/FormSelect.vue'
-import { storeAppConfig, getAppConfig } from '@/api/config'
+import http from '@/lib/http'
 
 const title = 'Module'
 const initialized = ref(false)
@@ -55,28 +69,51 @@ const submitError = ref('')
 const errors = ref({})
 
 const navs = [
-    { label: 'Config' },
-    { label: 'Module' },
-  ]
+  { label: 'Config' },
+  { label: 'Module' },
+]
 
-const form = reactive({
-    name: "",
-  })
+const modules = ref([])
 
 async function load() {
   try {
-    const { data } = await getAppConfig()
-    const section = data?.config?.module ?? data?.module
-    if (section && typeof section === 'object') {
-      Object.keys(form).forEach((k) => {
-        if (section[k] !== undefined && section[k] !== null) {
-          if (typeof form[k] === 'boolean') form[k] = !!section[k]
-          else form[k] = section[k]
+    const [pre, cur] = await Promise.all([
+      http.get('/app/config/module-pre-requisite'),
+      http.get('/app/config'),
+    ])
+    const current = Array.isArray(cur.data?.module) ? cur.data.module : []
+    const list = pre.data?.modules || []
+    // preserve saved ordering (position), then saved visibility
+    const savedByName = new Map(current.map((m) => [m.name, m]))
+    modules.value = list
+      .map((m) => {
+        const saved = savedByName.get(m.name)
+        return {
+          name: m.name,
+          label: m.label,
+          visibility: saved ? !!saved.visibility : m.visibility !== false,
+          children: (m.children || []).map((c) => {
+            const savedChild = saved ? (saved.children || []).find((sc) => sc.name === c.name) : null
+            return { name: c.name, label: c.label, visibility: savedChild ? savedChild.visibility !== false : c.visibility !== false }
+          }),
         }
       })
-    }
+      .sort((a, b) => {
+        const pa = savedByName.get(a.name)?.position ?? 9999
+        const pb = savedByName.get(b.name)?.position ?? 9999
+        return pa - pb
+      })
   } catch {}
   initialized.value = true
+}
+
+function move(i, dir) {
+  const j = i + dir
+  if (j < 0 || j >= modules.value.length) return
+  const next = [...modules.value]
+  const [row] = next.splice(i, 1)
+  next.splice(j, 0, row)
+  modules.value = next
 }
 
 async function save() {
@@ -84,7 +121,16 @@ async function save() {
   errors.value = {}
   submitError.value = ''
   try {
-    await storeAppConfig({ module: { ...form } })
+    // StoreModule derives position from array order
+    const payload = {
+      modules: modules.value.map((m, i) => ({
+        name: m.name,
+        position: i,
+        visibility: m.visibility !== false,
+        children: (m.children || []).map((c) => ({ name: c.name, visibility: m.visibility !== false && c.visibility !== false })),
+      })),
+    }
+    await http.post('/app/config/module', payload)
     Swal.fire({ icon: 'success', title: 'Saved', text: 'Module settings saved.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
   } catch (e) {
     if (e.fieldErrors) errors.value = e.fieldErrors
